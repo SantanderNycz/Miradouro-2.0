@@ -1,0 +1,395 @@
+"use client";
+/* Motor de render do relatório (blocos + temas). Portado do estúdio Miradouro. */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useState } from "react";
+import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, ReferenceLine } from "recharts";
+
+    const THEMES = {
+      P: { name: "Beringela", bg: "#F7F5FB", surface: "#FFFFFF", navy: "#241A38", navyLight: "#5A31C9", gold: "#5A31C9", goldLight: "#B9A7EE", slate: "#9AA3AE", terracotta: "#C0533B", sage: "#2FA66B", text: "#2B2440", muted: "#8B8698", border: "#ECEAF2" },
+      A: { name: "Grafite & Aço", bg: "#F6F7F9", surface: "#FFFFFF", navy: "#1C2530", navyLight: "#1D5B7E", gold: "#1D5B7E", goldLight: "#8FB0C4", slate: "#8A94A2", terracotta: "#B4432E", sage: "#3E7C63", text: "#1C2530", muted: "#5B6673", border: "#E6E8EC" },
+      B: { name: "Ardósia & Âmbar", bg: "#F7F5F0", surface: "#FFFFFF", navy: "#20242B", navyLight: "#9A6B2A", gold: "#A9762F", goldLight: "#C99A5B", slate: "#8C8A85", terracotta: "#A6462F", sage: "#5E7A57", text: "#20242B", muted: "#6A6A66", border: "#E7E3DA" },
+      C: { name: "Petróleo", bg: "#F5F7F7", surface: "#FFFFFF", navy: "#16232B", navyLight: "#1E6E6A", gold: "#1E6E6A", goldLight: "#77ABA8", slate: "#8A9699", terracotta: "#C05640", sage: "#3F7D5E", text: "#16232B", muted: "#5A6A6E", border: "#E3E8E8" },
+    };
+    const SHADOW = "0 1px 2px rgba(20,16,40,.04), 0 16px 36px -18px rgba(20,16,40,.16)";
+    let C = THEMES.P;
+    let PAL = { navy: C.navy, navyLight: C.navyLight, sage: C.sage, terracotta: C.terracotta, gold: C.gold, goldLight: C.goldLight, slate: C.slate };
+    function applyTheme(name) {
+      C = THEMES[name] || THEMES.P;
+      PAL = { navy: C.navy, navyLight: C.navyLight, sage: C.sage, terracotta: C.terracotta, gold: C.gold, goldLight: C.goldLight, slate: C.slate };
+    }
+    const col = (k) => (k == null ? C.navy : (PAL[k] || (String(k).charAt(0) === "#" ? k : C.navy)));
+    const eur = (v) => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Number(v) || 0);
+    const num = (v) => (v == null || v === "" ? 0 : Number(v));
+
+    function fmt(v, kind) {
+      if (v == null || v === "") return "";
+      const n = Number(v);
+      switch (kind) {
+        case "percent": return v + "%";
+        case "percent1": return (isNaN(n) ? v : n.toFixed(1)) + "%";
+        case "eur": return eur(n);
+        case "eurM": return (n / 1e6).toFixed(1) + "M€";
+        case "eur2M": return (n / 1e6).toFixed(2) + " M€";
+        case "kEur": return (n / 1000).toFixed(0) + "k€";
+        case "eur3": return n.toFixed(3) + " €";
+        case "eur2": return n.toFixed(2) + "€";
+        case "eur1": return n.toFixed(1) + "€";
+        case "eurPlain": return v + "€";
+        case "number": return isNaN(n) ? v : n.toLocaleString("pt-PT");
+        default: return v;
+      }
+    }
+
+    function rich(str, boldColor = null) {
+      if (str == null) return null;
+      const c = boldColor || C.navy;
+      return String(str).split(/(\*\*[^*]+\*\*)/g).map((p, i) =>
+        (p.startsWith("**") && p.endsWith("**"))
+          ? React.createElement("b", { key: i, style: { color: c } }, p.slice(2, -2))
+          : p);
+    }
+
+    function Title({ eyebrow, title, subtitle, right }) {
+      if (!eyebrow && !title && !subtitle && !right) return null;
+      return (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 18 }}>
+          <div style={{ flex: "1 1 340px" }}>
+            {eyebrow && <div style={{ fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: C.gold, fontWeight: 700, marginBottom: 5 }}>{eyebrow}</div>}
+            {title && <div style={{ fontFamily: "'Lora', serif", fontSize: 20, color: C.navy }}>{title}</div>}
+            {subtitle && <div style={{ fontSize: 12.5, color: C.muted, marginTop: 5, maxWidth: 720, lineHeight: 1.55 }}>{subtitle}</div>}
+          </div>
+          {right}
+        </div>
+      );
+    }
+
+    function Note({ tone, children }) {
+      const t = { neutral: { bg: "rgba(23,32,51,.04)", bar: C.navyLight }, warn: { bg: "rgba(217,45,32,.06)", bar: C.terracotta }, good: { bg: "rgba(18,183,106,.08)", bar: C.sage }, gold: { bg: "rgba(79,70,229,.06)", bar: C.gold } }[tone || "neutral"] || { bg: "rgba(23,32,51,.04)", bar: C.navyLight };
+      return <div style={{ marginTop: 16, padding: "14px 17px", background: t.bg, borderLeft: `3px solid ${t.bar}`, borderRadius: 12, fontSize: 12.8, lineHeight: 1.65 }}>{children}</div>;
+    }
+
+    function Seg({ value, onChange, options }) {
+      return (
+        <div style={{ display: "inline-flex", background: C.border, borderRadius: 999, padding: 3, gap: 2 }}>
+          {options.map((o) => (
+            <button key={o.value} onClick={() => onChange(o.value)}
+              style={{ border: "none", cursor: "pointer", padding: "6px 14px", borderRadius: 999, fontSize: 12, fontWeight: 600, fontFamily: "Poppins, sans-serif", background: value === o.value ? C.navy : "transparent", color: value === o.value ? "#fff" : C.muted }}>
+              {o.label}
+            </button>
+          ))}
+        </div>
+      );
+    }
+
+    function Spark({ pts, color }) {
+      if (!pts || pts.length < 2) return null;
+      const w = 120, h = 36, mx = Math.max.apply(null, pts), mn = Math.min.apply(null, pts), rng = (mx - mn) || 1, step = w / (pts.length - 1);
+      const d = pts.map((v, i) => `${(i * step).toFixed(1)},${(h - ((v - mn) / rng) * h).toFixed(1)}`).join(" ");
+      return <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ position: "absolute", right: 0, bottom: 16, width: "58%", height: 34, opacity: 0.45, zIndex: 1 }}><polyline fill="none" stroke={color} strokeWidth="2" points={d} /></svg>;
+    }
+
+    function KpisBlock({ items }) {
+      return (
+        <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+          {(items || []).map((k, i) => {
+            const hero = !!k.hero;
+            const vcol = hero ? "#fff" : col(k.accent || "navyLight");
+            return (
+              <div key={i} style={{ position: "relative", overflow: "hidden", background: hero ? C.navy : C.surface, border: `1px solid ${hero ? C.navy : C.border}`, borderRadius: 18, padding: "18px 20px", flex: "1 1 210px", minWidth: 190, boxShadow: SHADOW }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 10.5, letterSpacing: "0.06em", textTransform: "uppercase", color: hero ? "rgba(255,255,255,.6)" : C.muted, fontWeight: 700, position: "relative", zIndex: 2 }}>
+                  {k.dot && <span style={{ width: 7, height: 7, borderRadius: "50%", background: col(k.dot) }} />}{k.eyebrow}
+                </div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 10, position: "relative", zIndex: 2 }}>
+                  <span style={{ fontFamily: "'Lora', serif", fontSize: 30, fontWeight: 600, color: vcol, lineHeight: 1 }}>{k.value}</span>
+                  {k.delta && <span style={{ fontSize: 12, fontWeight: 600, color: hero ? "#fff" : (k.deltaDir === "down" ? C.terracotta : C.sage) }}>{k.delta}</span>}
+                </div>
+                {k.sub && <div style={{ fontSize: 12, color: hero ? "rgba(255,255,255,.65)" : C.muted, marginTop: 8, lineHeight: 1.45, position: "relative", zIndex: 2 }}>{k.sub}</div>}
+                {k.footnote && <div style={{ fontSize: 9.5, color: hero ? C.goldLight : C.gold, marginTop: 6, fontWeight: 600, position: "relative", zIndex: 2 }}>{k.footnote}</div>}
+                {k.spark && <Spark pts={k.spark} color={C.goldLight} />}
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    function Synthesis({ title, items }) {
+      return (
+        <div style={{ background: C.navy, borderRadius: 20, padding: "28px 32px", color: "#fff", boxShadow: SHADOW }}>
+          {title && <div style={{ fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: C.goldLight, fontWeight: 700, marginBottom: 14 }}>{title}</div>}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(270px, 1fr))", gap: 20, fontSize: 13.5, lineHeight: 1.6 }}>
+            {(items || []).map((s, i) => <div key={i}><b style={{ color: C.goldLight }}>{s.lead}</b> {s.text}</div>)}
+          </div>
+        </div>
+      );
+    }
+
+    function Callout({ title, text }) {
+      return (
+        <div style={{ background: C.navy, borderRadius: 20, padding: "26px 30px", color: "#fff", boxShadow: SHADOW }}>
+          {title && <div style={{ fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: C.goldLight, fontWeight: 700, marginBottom: 10 }}>{title}</div>}
+          <div style={{ fontSize: 14, lineHeight: 1.65, maxWidth: 860 }}>{text}</div>
+        </div>
+      );
+    }
+
+    function Banner({ tone, text }) {
+      const bar = col(tone === "warn" ? "terracotta" : tone === "good" ? "sage" : "gold");
+      return <div style={{ background: `${bar}17`, border: `1px solid ${bar}55`, borderRadius: 12, padding: "14px 18px", fontSize: 12.5, color: C.text, lineHeight: 1.6 }}>{rich(text)}</div>;
+    }
+
+    function FunnelBlock({ steps }) {
+      return (
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          {(steps || []).map((s, i) => (
+            <div key={i} style={{ flex: "1 1 180px", minWidth: 160, background: col(s.color), borderRadius: 12, padding: "18px 18px", color: "#fff" }}>
+              <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.05em", opacity: 0.75, fontWeight: 700, marginBottom: 8 }}>{i + 1}. {s.label}</div>
+              <div style={{ fontFamily: "'Lora', serif", fontSize: 25, lineHeight: 1.05 }}>{s.value}</div>
+              {s.sub && <div style={{ fontSize: 11.5, opacity: 0.82, marginTop: 6 }}>{s.sub}</div>}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    function ProgressBlock({ items }) {
+      return (
+        <div>
+          {(items || []).map((p, i) => (
+            <div key={i} style={{ marginBottom: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginBottom: 5 }}>
+                <span style={{ fontWeight: 600, color: C.navy }}>{p.label}</span>
+                <span style={{ color: C.muted }}>{p.valueLabel}</span>
+              </div>
+              <div style={{ height: 12, background: C.border, borderRadius: 6, overflow: "hidden" }}>
+                <div style={{ width: `${p.pct}%`, height: "100%", background: col(p.color), borderRadius: 6 }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    function TableBlock({ columns, rows, rowToneKey }) {
+      const cols = columns || [];
+      return (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
+            <thead>
+              <tr style={{ background: C.navy, color: "#fff" }}>
+                {cols.map((c, i) => <th key={i} style={{ padding: "9px 11px", textAlign: c.align || "left", fontWeight: 600, fontSize: 11.5 }}>{c.label}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {(rows || []).map((r, ri) => {
+                const tone = rowToneKey ? r[rowToneKey] : null;
+                const bg = tone === "hero" ? "rgba(110,138,114,.09)" : tone === "exp" ? "rgba(181,98,60,.06)" : "transparent";
+                return (
+                  <tr key={ri} style={{ borderBottom: `1px solid ${C.border}`, background: bg }}>
+                    {cols.map((c, ci) => {
+                      let color;
+                      if (c.muted) color = C.muted;
+                      if (c.tone === "navy") color = C.navy;
+                      if (c.tone === "atingido") color = num(r[c.key]) >= 100 ? C.sage : C.terracotta;
+                      let content = r[c.key];
+                      if (c.format) content = fmt(content, c.format);
+                      else if (content == null || content === "") content = "—";
+                      return <td key={ci} style={{ padding: "9px 11px", textAlign: c.align || "left", fontWeight: c.bold ? 700 : 400, color }}>{content}</td>;
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+
+    function BarChartBlock({ spec }) {
+      const [vi, setVi] = useState(0);
+      const active = spec.variants ? Object.assign({}, spec, spec.variants[vi]) : spec;
+      const data = active.data || [];
+      const series = active.series || [];
+      const height = active.height || 300;
+      const tip = (val, name, p) => {
+        const vf = (active.tooltip && active.tooltip.valueFormat) || active.yFormat;
+        const out = fmt(val, vf);
+        if (active.tooltip && active.tooltip.extraKey) return [out, p && p.payload ? p.payload[active.tooltip.extraKey] : ""];
+        return [out, name];
+      };
+      const labelStyle = active.barLabelStyle ? Object.assign({}, active.barLabelStyle, { fill: col(active.barLabelStyle.fill) }) : { fontSize: 10.5, fill: C.muted };
+      return (
+        <div>
+          {(active.subtitle || spec.variants) && (
+            <div style={{ display: "flex", justifyContent: active.subtitle ? "space-between" : "flex-end", alignItems: "center", marginBottom: 8, gap: 10, flexWrap: "wrap" }}>
+              {active.subtitle && <div style={{ fontSize: 12, fontWeight: 600, color: C.muted, textAlign: "center", flex: 1 }}>{active.subtitle}</div>}
+              {spec.variants && <Seg value={vi} onChange={setVi} options={spec.variants.map((v, i) => ({ value: i, label: v.label }))} />}
+            </div>
+          )}
+          <ResponsiveContainer width="100%" height={height}>
+            <BarChart data={data} margin={{ top: 24, right: 10, left: 0, bottom: 0 }} barCategoryGap={active.barGap || "26%"}>
+              <CartesianGrid stroke={C.border} vertical={false} />
+              <XAxis dataKey={active.xKey || "lb"} tick={{ fontSize: 11.5, fill: C.text }} axisLine={{ stroke: C.border }} tickLine={false} />
+              <YAxis domain={active.yDomain || [0, "auto"]} tickFormatter={(v) => fmt(v, active.yFormat)} tick={{ fontSize: 11.5, fill: C.muted }} axisLine={false} tickLine={false} width={active.yWidth || 46} />
+              <Tooltip contentStyle={{ background: C.navy, border: "none", borderRadius: 8, fontSize: 12 }} labelStyle={{ color: C.goldLight, fontFamily: "'Lora', serif" }} itemStyle={{ color: "#fff" }} formatter={tip} />
+              {active.referenceLine && <ReferenceLine y={active.referenceLine.y} stroke={C.navy} strokeDasharray="5 4" label={active.referenceLine.label ? { value: active.referenceLine.label, position: "insideTopRight", fontSize: 11, fill: C.navy, dy: -6 } : undefined} />}
+              {active.legend && <Legend wrapperStyle={{ fontSize: 11.5, paddingTop: 10 }} />}
+              {series.map((s, si) => {
+                const isLast = si === series.length - 1;
+                const radius = isLast ? [6, 6, 0, 0] : [0, 0, 0, 0];
+                const labelProp = (active.barLabelFormat && series.length === 1) ? { position: "top", formatter: (v) => fmt(v, active.barLabelFormat), ...labelStyle } : undefined;
+                return (
+                  <Bar key={si} dataKey={s.key} name={s.name || s.key} stackId={s.stackId} radius={radius} fill={col(s.color)} label={labelProp} fillOpacity={s.opacity == null ? 1 : s.opacity}>
+                    {s.colorKey && data.map((d, di) => <Cell key={di} fill={col(d[s.colorKey])} />)}
+                  </Bar>
+                );
+              })}
+            </BarChart>
+          </ResponsiveContainer>
+          {active.legendItems && (
+            <div style={{ display: "flex", gap: 18, marginTop: 12, fontSize: 12, color: C.muted, flexWrap: "wrap" }}>
+              {active.legendItems.map((l, i) => <span key={i}><span style={{ display: "inline-block", width: 10, height: 10, background: col(l.color), borderRadius: 3, marginRight: 6 }} />{l.label}</span>)}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function AreaChartBlock({ spec }) {
+      const data = spec.data || [];
+      const s0 = (spec.series && spec.series[0]) || {};
+      const c = col(s0.color || "navyLight");
+      const gid = "grad" + Math.abs((spec.xKey || "x").length * 7 + data.length * 13 + c.length);
+      return (
+        <div>
+          {spec.subtitle && <div style={{ fontSize: 12, fontWeight: 600, color: C.muted, textAlign: "center", marginBottom: 8 }}>{spec.subtitle}</div>}
+          <ResponsiveContainer width="100%" height={spec.height || 280}>
+            <AreaChart data={data} margin={{ top: 16, right: 10, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={c} stopOpacity={0.35} />
+                  <stop offset="100%" stopColor={c} stopOpacity={0.03} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid stroke={C.border} vertical={false} />
+              <XAxis dataKey={spec.xKey || "lb"} tick={{ fontSize: 11, fill: C.muted }} axisLine={{ stroke: C.border }} tickLine={false} />
+              <YAxis domain={spec.yDomain || [0, "auto"]} tickFormatter={(v) => fmt(v, spec.yFormat)} tick={{ fontSize: 11, fill: C.muted }} axisLine={false} tickLine={false} width={spec.yWidth || 48} />
+              <Tooltip contentStyle={{ background: C.navy, border: "none", borderRadius: 8, fontSize: 12 }} labelStyle={{ color: C.goldLight, fontFamily: "'Lora', serif" }} itemStyle={{ color: "#fff" }} formatter={(v, n, p) => [fmt(v, (spec.tooltip && spec.tooltip.valueFormat) || spec.yFormat), (spec.tooltip && spec.tooltip.extraKey && p && p.payload) ? p.payload[spec.tooltip.extraKey] : (s0.name || "")]} />
+              {spec.referenceLine && <ReferenceLine y={spec.referenceLine.y} stroke={C.navy} strokeDasharray="5 4" label={spec.referenceLine.label ? { value: spec.referenceLine.label, position: "insideTopRight", fontSize: 11, fill: C.navy, dy: -6 } : undefined} />}
+              <Area type="monotone" dataKey={s0.key || "v"} stroke={c} strokeWidth={2.5} fill={`url(#${gid})`} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      );
+    }
+
+    function CardBlock({ block }) {
+      return (
+        <div style={{ background: C.surface, borderRadius: 20, padding: "24px 26px", border: `1px solid ${C.border}`, boxShadow: SHADOW }}>
+          <Title eyebrow={block.eyebrow} title={block.title} subtitle={block.subtitle} />
+          <Blocks list={block.blocks} />
+        </div>
+      );
+    }
+
+    function RowBlock({ block }) {
+      return (
+        <div style={{ display: "flex", gap: 22, flexWrap: "wrap" }}>
+          {(block.blocks || []).map((child, i) => (
+            <div key={i} style={{ flex: "1 1 340px", minWidth: 300 }}><Block block={child} /></div>
+          ))}
+        </div>
+      );
+    }
+
+    function Block({ block }) {
+      if (!block || !block.type) return null;
+      switch (block.type) {
+        case "kpis": return <KpisBlock items={block.items} />;
+        case "card": return <CardBlock block={block} />;
+        case "row": return <RowBlock block={block} />;
+        case "barChart": return <BarChartBlock spec={block} />;
+        case "areaChart": return <AreaChartBlock spec={block} />;
+        case "note": return <Note tone={block.tone}>{rich(block.text)}</Note>;
+        case "banner": return <Banner tone={block.tone} text={block.text} />;
+        case "synthesis": return <Synthesis title={block.title} items={block.items} />;
+        case "callout": return <Callout title={block.title} text={block.text} />;
+        case "funnel": return <FunnelBlock steps={block.steps} />;
+        case "progress": return <ProgressBlock items={block.items} />;
+        case "table": return <TableBlock columns={block.columns} rows={block.rows} rowToneKey={block.rowToneKey} />;
+        case "heading": return <Title eyebrow={block.eyebrow} title={block.title} subtitle={block.subtitle} />;
+        case "text": return <p style={{ fontSize: 13.5, color: C.muted, lineHeight: 1.6, margin: 0, maxWidth: 760 }}>{rich(block.text)}</p>;
+        case "spacer": return <div style={{ height: block.size || 16 }} />;
+        default: return null;
+      }
+    }
+
+    function Blocks({ list, spacing }) {
+      return (list || []).map((b, i) => spacing
+        ? <div key={i} style={{ marginBottom: spacing }}><Block block={b} /></div>
+        : <Block key={i} block={b} />);
+    }
+
+    function ReportApp({ data }) {
+      const D = data || {};
+      const meta = D.meta || {};
+      applyTheme(meta.theme);
+      let tabs = D.tabs;
+      if (!tabs || !tabs.length) tabs = [{ label: "", blocks: D.blocks || [] }];
+      const [tab, setTab] = useState(0);
+      const showTabs = tabs.length > 1;
+      const activeTab = tabs[Math.min(tab, tabs.length - 1)] || tabs[0];
+      const brandShort = meta.brand ? meta.brand.split("·")[0].trim() : "Relatório";
+      const frameCss = "@media (max-width: 760px){ .mir-app{flex-direction:column !important;} .mir-side{width:auto !important;} .mir-panel{margin-left:0 !important; border-radius:0 !important;} }";
+
+      return (
+        <div style={{ minHeight: "100%", fontFamily: "Poppins, sans-serif", color: C.text, padding: "26px 22px", background: `repeating-linear-gradient(135deg, rgba(255,255,255,.02) 0 2px, transparent 2px 26px), ${C.navy}` }}>
+          <style>{frameCss}</style>
+          <div className="mir-app" style={{ maxWidth: 1200, margin: "0 auto", display: "flex", background: C.navy, borderRadius: 28, overflow: "hidden", boxShadow: "0 40px 90px -34px rgba(0,0,0,.55)" }}>
+
+            <aside className="mir-side" style={{ width: 240, flex: "none", padding: "26px 18px", color: "#fff", background: "rgba(255,255,255,.05)" }}>
+              <div style={{ padding: "0 8px 16px", borderBottom: "1px solid rgba(255,255,255,.1)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, fontWeight: 600 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: C.sage }} />{brandShort}
+                </div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,.5)", marginTop: 3 }}>Relatório de campanha</div>
+              </div>
+              {showTabs && (
+                <nav style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 16 }}>
+                  {tabs.map((t, i) => (
+                    <button key={i} onClick={() => setTab(i)}
+                      style={{ textAlign: "left", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 11, padding: "11px 13px", borderRadius: 11, fontFamily: "Poppins, sans-serif", fontSize: 13, fontWeight: i === tab ? 600 : 500, background: i === tab ? "#fff" : "transparent", color: i === tab ? C.navy : "rgba(255,255,255,.8)", boxShadow: i === tab ? SHADOW : "none" }}>
+                      <span style={{ width: 16, height: 16, borderRadius: 5, flex: "none", background: i === tab ? C.navyLight : "rgba(255,255,255,.18)" }} />{t.label}
+                    </button>
+                  ))}
+                </nav>
+              )}
+              {meta.footer && <div style={{ marginTop: 22, fontSize: 10.5, color: "rgba(255,255,255,.45)", lineHeight: 1.5, padding: "0 8px" }}>{meta.footer}</div>}
+            </aside>
+
+            <section className="mir-panel" style={{ flex: 1, minWidth: 0, background: C.surface, borderRadius: "26px 0 0 26px", marginLeft: -18, padding: "26px 30px 34px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 14, flexWrap: "wrap", paddingBottom: 18, borderBottom: `1px solid ${C.border}`, marginBottom: 22 }}>
+                <div>
+                  <div style={{ width: 40, height: 4, borderRadius: 4, background: C.navyLight, marginBottom: 12 }} />
+                  {meta.brand && <div style={{ fontSize: 10.5, letterSpacing: "0.11em", textTransform: "uppercase", color: C.gold, fontWeight: 700, marginBottom: 8 }}>{meta.brand}</div>}
+                  {meta.title && <h1 style={{ fontFamily: "'Lora', serif", fontSize: 32, fontWeight: 600, color: C.navy, margin: "0 0 9px", lineHeight: 1.12, letterSpacing: "-.01em" }}>{meta.title}</h1>}
+                  {meta.intro && <p style={{ color: C.muted, fontSize: 13.5, maxWidth: 680, margin: 0, lineHeight: 1.6 }}>{meta.intro}</p>}
+                </div>
+                {meta.period && <span style={{ flex: "none", background: C.navyLight, color: "#fff", fontSize: 12, fontWeight: 600, padding: "9px 15px", borderRadius: 999, boxShadow: SHADOW }}>{meta.period}</span>}
+              </div>
+
+              <Blocks list={activeTab.blocks} spacing={16} />
+
+              {meta.readingNotes && (
+                <div style={{ background: C.bg, borderRadius: 16, padding: "16px 20px", border: `1px solid ${C.border}`, fontSize: 11.8, color: C.muted, lineHeight: 1.65, marginTop: 16 }}>{rich(meta.readingNotes)}</div>
+              )}
+            </section>
+          </div>
+        </div>
+      );
+    }
+
+  
+
+export { ReportApp, THEMES };
+export default ReportApp;
