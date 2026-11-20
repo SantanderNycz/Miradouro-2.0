@@ -3,6 +3,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import ReportView from "@/components/ReportView";
+import PrefsBar from "@/components/PrefsBar";
+import { usePrefs } from "@/lib/prefs";
+import { downloadStandalone } from "@/lib/standalone";
 import type { Report, ReportRow } from "@/types/report";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
@@ -17,7 +20,6 @@ const THEME_OPTS = [
   { value: "C", label: "C — Petróleo" },
 ];
 
-// Resumo do esquema — copiado para o chat do Claude pedir um JSON de relatório.
 const CLAUDE_PROMPT = [
   "Preciso que geres um ficheiro JSON para o meu relatório interativo (motor Miradouro). Devolve APENAS JSON válido, sem comentários.",
   "",
@@ -46,10 +48,10 @@ const CLAUDE_PROMPT = [
   "Os dados são: [COLA AQUI OS TEUS DADOS]. Preenche o JSON com base neles.",
 ].join("\n");
 
-/* ---------- primitivos de formulário ---------- */
-const sLabel: React.CSSProperties = { display: "block", fontSize: 11, fontWeight: 600, color: "#8B8698", marginBottom: 4, letterSpacing: ".02em" };
-const sInput: React.CSSProperties = { width: "100%", border: "1px solid #ECEAF2", borderRadius: 8, padding: "8px 10px", fontSize: 13, fontFamily: "Poppins, sans-serif", color: "#2B2440", background: "#fff" };
-const chip: React.CSSProperties = { border: "1px solid #ECEAF2", background: "#fff", borderRadius: 999, padding: "5px 11px", fontSize: 12, fontWeight: 600, cursor: "pointer", color: "#5A31C9" };
+/* ---------- primitivos ---------- */
+const sLabel: React.CSSProperties = { display: "block", fontSize: 11, fontWeight: 600, color: "var(--ui-muted)", marginBottom: 4, letterSpacing: ".02em" };
+const sInput: React.CSSProperties = { width: "100%", border: "1px solid var(--ui-border)", borderRadius: 8, padding: "8px 10px", fontSize: 13, fontFamily: "Poppins, sans-serif", color: "var(--ui-text)", background: "var(--ui-input-bg)" };
+const chip: React.CSSProperties = { border: "1px solid var(--ui-border)", background: "var(--ui-input-bg)", borderRadius: 999, padding: "5px 11px", fontSize: 12, fontWeight: 600, cursor: "pointer", color: "var(--ui-accent)" };
 
 function Field({ label, value, onChange, area, type = "text", step }: any) {
   return (
@@ -76,15 +78,16 @@ function SelectField({ label, value, onChange, options }: any) {
 }
 
 function TokenField({ label, value, onChange }: any) {
-  return <SelectField label={label} value={value} onChange={onChange} options={[{ value: "", label: "— (padrão)" }, ...TOKENS.map((t) => ({ value: t, label: t }))]} />;
+  const { t } = usePrefs();
+  return <SelectField label={label} value={value} onChange={onChange} options={[{ value: "", label: t("theme_default") }, ...TOKENS.map((tk) => ({ value: tk, label: tk }))]} />;
 }
 
 function Section({ title, eyebrow, children, open }: any) {
   return (
-    <details open={open} style={{ border: "1px solid #ECEAF2", borderRadius: 12, marginBottom: 12, background: "#fff", overflow: "hidden" }}>
-      <summary style={{ cursor: "pointer", listStyle: "none", padding: "12px 14px", display: "flex", alignItems: "center", gap: 8, fontWeight: 600, fontSize: 13.5, color: "#241A38", background: "#faf9fd" }}>
+    <details open={open} style={{ border: "1px solid var(--ui-border)", borderRadius: 12, marginBottom: 12, background: "var(--ui-surface)", overflow: "hidden" }}>
+      <summary style={{ cursor: "pointer", listStyle: "none", padding: "12px 14px", display: "flex", alignItems: "center", gap: 8, fontWeight: 600, fontSize: 13.5, color: "var(--ui-text)", background: "var(--ui-panel)" }}>
         <span>{title}</span>
-        {eyebrow && <span style={{ marginLeft: "auto", fontSize: 10.5, color: "#8B8698", textTransform: "uppercase", letterSpacing: ".06em", fontWeight: 700 }}>{eyebrow}</span>}
+        {eyebrow && <span style={{ marginLeft: "auto", fontSize: 10.5, color: "var(--ui-muted)", textTransform: "uppercase", letterSpacing: ".06em", fontWeight: 700 }}>{eyebrow}</span>}
       </summary>
       <div style={{ padding: "14px" }}>{children}</div>
     </details>
@@ -93,8 +96,8 @@ function Section({ title, eyebrow, children, open }: any) {
 
 function ItemCard({ children, onRemove }: any) {
   return (
-    <div style={{ border: "1px dashed #E3DEF0", borderRadius: 10, padding: 12, marginBottom: 10, position: "relative", background: "#fcfbfe" }}>
-      {onRemove && <button onClick={onRemove} title="Remover" style={{ position: "absolute", top: 8, right: 8, border: "none", background: "transparent", color: "#C0533B", cursor: "pointer", fontSize: 16, lineHeight: 1 }}>×</button>}
+    <div style={{ border: "1px dashed var(--ui-border-dashed)", borderRadius: 10, padding: 12, marginBottom: 10, position: "relative", background: "var(--ui-card-subtle)" }}>
+      {onRemove && <button onClick={onRemove} title="×" style={{ position: "absolute", top: 8, right: 8, border: "none", background: "transparent", color: "var(--ui-danger)", cursor: "pointer", fontSize: 16, lineHeight: 1 }}>×</button>}
       {children}
     </div>
   );
@@ -104,190 +107,192 @@ function AddBtn({ onClick, children }: any) {
   return <button onClick={onClick} style={{ ...chip, borderStyle: "dashed", width: "100%", padding: "8px" }}>{children}</button>;
 }
 
+function blockTitle(b: any, t: (k: string) => string) {
+  const key = "bt_" + (b?.type || "");
+  const translated = t(key);
+  return translated === key ? (b?.type || "Bloco") : translated;
+}
+
 /* ---------- formulários por tipo de bloco ---------- */
 function BlockForm({ block, onChange }: { block: any; onChange: (b: any) => void }) {
-  const t = block?.type;
+  const { t } = usePrefs();
   const upd = (patch: any) => onChange(Object.assign({}, block, patch));
   const updList = (key: string, list: any[]) => onChange(Object.assign({}, block, { [key]: list }));
+  const type = block?.type;
 
-  if (t === "card" || t === "row") {
+  if (type === "card" || type === "row") {
     const kids = block.blocks || [];
     return (
       <div>
-        {t === "card" && (
+        {type === "card" && (
           <div style={{ marginBottom: 10 }}>
-            <Field label="Eyebrow" value={block.eyebrow} onChange={(v: any) => upd({ eyebrow: v })} />
-            <Field label="Título do cartão" value={block.title} onChange={(v: any) => upd({ title: v })} />
-            <Field label="Subtítulo" value={block.subtitle} onChange={(v: any) => upd({ subtitle: v })} area />
+            <Field label={t("b_eyebrow")} value={block.eyebrow} onChange={(v: any) => upd({ eyebrow: v })} />
+            <Field label={t("b_card_title")} value={block.title} onChange={(v: any) => upd({ title: v })} />
+            <Field label={t("b_subtitle")} value={block.subtitle} onChange={(v: any) => upd({ subtitle: v })} area />
           </div>
         )}
-        <div style={{ borderLeft: "2px solid #ECEAF2", paddingLeft: 12 }}>
+        <div style={{ borderLeft: "2px solid var(--ui-border)", paddingLeft: 12 }}>
           {kids.map((b: any, i: number) => (
-            <Section key={i} title={blockTitle(b)} eyebrow={b.type} open={false}>
+            <Section key={i} title={blockTitle(b, t)} eyebrow={b.type} open={false}>
               <BlockForm block={b} onChange={(nb) => updList("blocks", kids.map((x: any, j: number) => (j === i ? nb : x)))} />
             </Section>
           ))}
-          {kids.length === 0 && <div style={{ fontSize: 12, color: "#8B8698" }}>Sem blocos. Adiciona em modo JSON.</div>}
+          {kids.length === 0 && <div style={{ fontSize: 12, color: "var(--ui-muted)" }}>{t("nested_empty")}</div>}
         </div>
       </div>
     );
   }
 
-  if (t === "kpis") {
+  if (type === "kpis") {
     const items = block.items || [];
+    const set = (i: number, patch: any) => updList("items", items.map((x: any, j: number) => (j === i ? { ...x, ...patch } : x)));
     return (
       <div>
         {items.map((k: any, i: number) => (
           <ItemCard key={i} onRemove={() => updList("items", items.filter((_: any, j: number) => j !== i))}>
-            <Field label="Eyebrow" value={k.eyebrow} onChange={(v: any) => updList("items", items.map((x: any, j: number) => (j === i ? { ...x, eyebrow: v } : x)))} />
-            <Field label="Valor" value={k.value} onChange={(v: any) => updList("items", items.map((x: any, j: number) => (j === i ? { ...x, value: v } : x)))} />
-            <Field label="Sub" value={k.sub} onChange={(v: any) => updList("items", items.map((x: any, j: number) => (j === i ? { ...x, sub: v } : x)))} area={2} />
+            <Field label={t("b_eyebrow")} value={k.eyebrow} onChange={(v: any) => set(i, { eyebrow: v })} />
+            <Field label={t("b_value")} value={k.value} onChange={(v: any) => set(i, { value: v })} />
+            <Field label={t("b_sub")} value={k.sub} onChange={(v: any) => set(i, { sub: v })} area={2} />
             <div style={{ display: "flex", gap: 10 }}>
-              <div style={{ flex: 1 }}><TokenField label="Acento" value={k.accent} onChange={(v: any) => updList("items", items.map((x: any, j: number) => (j === i ? { ...x, accent: v } : x)))} /></div>
-              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#8B8698", marginTop: 20 }}>
-                <input type="checkbox" checked={!!k.hero} onChange={(e) => updList("items", items.map((x: any, j: number) => (j === i ? { ...x, hero: e.target.checked } : x)))} /> Destaque (escuro)
+              <div style={{ flex: 1 }}><TokenField label={t("b_accent")} value={k.accent} onChange={(v: any) => set(i, { accent: v })} /></div>
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--ui-muted)", marginTop: 20 }}>
+                <input type="checkbox" checked={!!k.hero} onChange={(e) => set(i, { hero: e.target.checked })} /> {t("b_hero")}
               </label>
             </div>
-            <Field label="Rodapé (footnote)" value={k.footnote} onChange={(v: any) => updList("items", items.map((x: any, j: number) => (j === i ? { ...x, footnote: v } : x)))} />
+            <Field label={t("b_footnote")} value={k.footnote} onChange={(v: any) => set(i, { footnote: v })} />
           </ItemCard>
         ))}
-        <AddBtn onClick={() => updList("items", [...items, { eyebrow: "Novo", value: "0", sub: "", accent: "navyLight" }])}>+ Adicionar KPI</AddBtn>
+        <AddBtn onClick={() => updList("items", [...items, { eyebrow: "Novo", value: "0", sub: "", accent: "navyLight" }])}>{t("add_kpi")}</AddBtn>
       </div>
     );
   }
 
-  if (t === "note" || t === "banner") {
+  if (type === "note" || type === "banner") {
     return (
       <div>
-        <SelectField label="Tom" value={block.tone} onChange={(v: any) => upd({ tone: v })} options={["neutral", "good", "warn", "gold"]} />
-        <Field label="Texto (**negrito**)" value={block.text} onChange={(v: any) => upd({ text: v })} area={3} />
+        <SelectField label={t("b_tone")} value={block.tone} onChange={(v: any) => upd({ tone: v })} options={["neutral", "good", "warn", "gold"]} />
+        <Field label={t("b_text")} value={block.text} onChange={(v: any) => upd({ text: v })} area={3} />
       </div>
     );
   }
-  if (t === "callout") {
+  if (type === "callout") {
     return (
       <div>
-        <Field label="Título" value={block.title} onChange={(v: any) => upd({ title: v })} />
-        <Field label="Texto" value={block.text} onChange={(v: any) => upd({ text: v })} area={3} />
+        <Field label={t("b_title")} value={block.title} onChange={(v: any) => upd({ title: v })} />
+        <Field label={t("b_text")} value={block.text} onChange={(v: any) => upd({ text: v })} area={3} />
       </div>
     );
   }
-  if (t === "text") return <Field label="Parágrafo (**negrito**)" value={block.text} onChange={(v: any) => upd({ text: v })} area={3} />;
-  if (t === "heading") {
+  if (type === "text") return <Field label={t("b_paragraph")} value={block.text} onChange={(v: any) => upd({ text: v })} area={3} />;
+  if (type === "heading") {
     return (
       <div>
-        <Field label="Eyebrow" value={block.eyebrow} onChange={(v: any) => upd({ eyebrow: v })} />
-        <Field label="Título" value={block.title} onChange={(v: any) => upd({ title: v })} />
-        <Field label="Subtítulo" value={block.subtitle} onChange={(v: any) => upd({ subtitle: v })} area={2} />
+        <Field label={t("b_eyebrow")} value={block.eyebrow} onChange={(v: any) => upd({ eyebrow: v })} />
+        <Field label={t("b_title")} value={block.title} onChange={(v: any) => upd({ title: v })} />
+        <Field label={t("b_subtitle")} value={block.subtitle} onChange={(v: any) => upd({ subtitle: v })} area={2} />
       </div>
     );
   }
-  if (t === "synthesis") {
+  if (type === "synthesis") {
     const items = block.items || [];
+    const set = (i: number, patch: any) => updList("items", items.map((x: any, j: number) => (j === i ? { ...x, ...patch } : x)));
     return (
       <div>
-        <Field label="Título" value={block.title} onChange={(v: any) => upd({ title: v })} />
+        <Field label={t("b_title")} value={block.title} onChange={(v: any) => upd({ title: v })} />
         {items.map((s: any, i: number) => (
           <ItemCard key={i} onRemove={() => updList("items", items.filter((_: any, j: number) => j !== i))}>
-            <Field label="Lead (negrito)" value={s.lead} onChange={(v: any) => updList("items", items.map((x: any, j: number) => (j === i ? { ...x, lead: v } : x)))} />
-            <Field label="Texto" value={s.text} onChange={(v: any) => updList("items", items.map((x: any, j: number) => (j === i ? { ...x, text: v } : x)))} area={2} />
+            <Field label={t("b_lead")} value={s.lead} onChange={(v: any) => set(i, { lead: v })} />
+            <Field label={t("b_text")} value={s.text} onChange={(v: any) => set(i, { text: v })} area={2} />
           </ItemCard>
         ))}
-        <AddBtn onClick={() => updList("items", [...items, { lead: "Ponto.", text: "" }])}>+ Adicionar ponto</AddBtn>
+        <AddBtn onClick={() => updList("items", [...items, { lead: "...", text: "" }])}>{t("add_point")}</AddBtn>
       </div>
     );
   }
-  if (t === "funnel") {
+  if (type === "funnel") {
     const steps = block.steps || [];
+    const set = (i: number, patch: any) => updList("steps", steps.map((x: any, j: number) => (j === i ? { ...x, ...patch } : x)));
     return (
       <div>
         {steps.map((s: any, i: number) => (
           <ItemCard key={i} onRemove={() => updList("steps", steps.filter((_: any, j: number) => j !== i))}>
-            <Field label="Rótulo" value={s.label} onChange={(v: any) => updList("steps", steps.map((x: any, j: number) => (j === i ? { ...x, label: v } : x)))} />
-            <Field label="Valor" value={s.value} onChange={(v: any) => updList("steps", steps.map((x: any, j: number) => (j === i ? { ...x, value: v } : x)))} />
-            <Field label="Sub" value={s.sub} onChange={(v: any) => updList("steps", steps.map((x: any, j: number) => (j === i ? { ...x, sub: v } : x)))} />
-            <TokenField label="Cor" value={s.color} onChange={(v: any) => updList("steps", steps.map((x: any, j: number) => (j === i ? { ...x, color: v } : x)))} />
+            <Field label={t("b_label")} value={s.label} onChange={(v: any) => set(i, { label: v })} />
+            <Field label={t("b_value")} value={s.value} onChange={(v: any) => set(i, { value: v })} />
+            <Field label={t("b_sub")} value={s.sub} onChange={(v: any) => set(i, { sub: v })} />
+            <TokenField label={t("b_color")} value={s.color} onChange={(v: any) => set(i, { color: v })} />
           </ItemCard>
         ))}
-        <AddBtn onClick={() => updList("steps", [...steps, { label: "Etapa", value: "0", sub: "", color: "navy" }])}>+ Adicionar etapa</AddBtn>
+        <AddBtn onClick={() => updList("steps", [...steps, { label: "...", value: "0", sub: "", color: "navy" }])}>{t("add_step")}</AddBtn>
       </div>
     );
   }
-  if (t === "progress") {
+  if (type === "progress") {
     const items = block.items || [];
+    const set = (i: number, patch: any) => updList("items", items.map((x: any, j: number) => (j === i ? { ...x, ...patch } : x)));
     return (
       <div>
         {items.map((p: any, i: number) => (
           <ItemCard key={i} onRemove={() => updList("items", items.filter((_: any, j: number) => j !== i))}>
-            <Field label="Rótulo" value={p.label} onChange={(v: any) => updList("items", items.map((x: any, j: number) => (j === i ? { ...x, label: v } : x)))} />
-            <Field label="Valor (texto)" value={p.valueLabel} onChange={(v: any) => updList("items", items.map((x: any, j: number) => (j === i ? { ...x, valueLabel: v } : x)))} />
-            <Field label="Percentagem" type="number" value={p.pct} onChange={(v: any) => updList("items", items.map((x: any, j: number) => (j === i ? { ...x, pct: v } : x)))} />
-            <TokenField label="Cor" value={p.color} onChange={(v: any) => updList("items", items.map((x: any, j: number) => (j === i ? { ...x, color: v } : x)))} />
+            <Field label={t("b_label")} value={p.label} onChange={(v: any) => set(i, { label: v })} />
+            <Field label={t("b_valuelabel")} value={p.valueLabel} onChange={(v: any) => set(i, { valueLabel: v })} />
+            <Field label={t("b_pct")} type="number" value={p.pct} onChange={(v: any) => set(i, { pct: v })} />
+            <TokenField label={t("b_color")} value={p.color} onChange={(v: any) => set(i, { color: v })} />
           </ItemCard>
         ))}
-        <AddBtn onClick={() => updList("items", [...items, { label: "Item", valueLabel: "0%", pct: 0, color: "navyLight" }])}>+ Adicionar barra</AddBtn>
+        <AddBtn onClick={() => updList("items", [...items, { label: "...", valueLabel: "0%", pct: 0, color: "navyLight" }])}>{t("add_bar")}</AddBtn>
       </div>
     );
   }
-  if (t === "table") {
+  if (type === "table") {
     const cols = block.columns || [];
     const rows = block.rows || [];
     const setRows = (r: any[]) => updList("rows", r);
     return (
       <div>
-        <div style={{ overflowX: "auto", border: "1px solid #ECEAF2", borderRadius: 8 }}>
+        <div style={{ overflowX: "auto", border: "1px solid var(--ui-border)", borderRadius: 8 }}>
           <table style={{ borderCollapse: "collapse", fontSize: 12, width: "100%" }}>
-            <thead><tr>{cols.map((c: any) => <th key={c.key} style={{ padding: "6px 8px", textAlign: "left", color: "#8B8698", fontWeight: 600, borderBottom: "1px solid #ECEAF2", whiteSpace: "nowrap" }}>{c.label}</th>)}<th /></tr></thead>
+            <thead><tr>{cols.map((c: any) => <th key={c.key} style={{ padding: "6px 8px", textAlign: "left", color: "var(--ui-muted)", fontWeight: 600, borderBottom: "1px solid var(--ui-border)", whiteSpace: "nowrap" }}>{c.label}</th>)}<th /></tr></thead>
             <tbody>
               {rows.map((r: any, ri: number) => (
                 <tr key={ri}>
                   {cols.map((c: any) => (
-                    <td key={c.key} style={{ padding: "3px 4px", borderBottom: "1px solid #F3F1F8" }}>
+                    <td key={c.key} style={{ padding: "3px 4px", borderBottom: "1px solid var(--ui-border)" }}>
                       <input
                         value={r[c.key] ?? ""}
                         onChange={(e) => {
                           const raw = e.target.value;
-                          const num = c.format && c.format !== "number" ? Number(raw) : raw;
                           const val = c.format && raw !== "" && !isNaN(Number(raw)) ? Number(raw) : raw;
                           setRows(rows.map((x: any, j: number) => (j === ri ? { ...x, [c.key]: c.format ? val : raw } : x)));
                         }}
-                        style={{ border: "1px solid #ECEAF2", borderRadius: 6, padding: "5px 7px", fontSize: 12, width: 110, fontFamily: "Poppins, sans-serif" }}
+                        style={{ border: "1px solid var(--ui-border)", borderRadius: 6, padding: "5px 7px", fontSize: 12, width: 110, fontFamily: "Poppins, sans-serif", background: "var(--ui-input-bg)", color: "var(--ui-text)" }}
                       />
                     </td>
                   ))}
-                  <td><button onClick={() => setRows(rows.filter((_: any, j: number) => j !== ri))} style={{ border: "none", background: "transparent", color: "#C0533B", cursor: "pointer", fontSize: 15 }}>×</button></td>
+                  <td><button onClick={() => setRows(rows.filter((_: any, j: number) => j !== ri))} style={{ border: "none", background: "transparent", color: "var(--ui-danger)", cursor: "pointer", fontSize: 15 }}>×</button></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
         <div style={{ marginTop: 8 }}>
-          <AddBtn onClick={() => setRows([...rows, Object.fromEntries(cols.map((c: any) => [c.key, ""]))])}>+ Adicionar linha</AddBtn>
+          <AddBtn onClick={() => setRows([...rows, Object.fromEntries(cols.map((c: any) => [c.key, ""]))])}>{t("add_row")}</AddBtn>
         </div>
-        <div style={{ fontSize: 11, color: "#8B8698", marginTop: 6 }}>Colunas e formatos editam-se no modo JSON.</div>
+        <div style={{ fontSize: 11, color: "var(--ui-muted)", marginTop: 6 }}>{t("cols_hint")}</div>
       </div>
     );
   }
 
-  // Gráficos e outros: resumo + indicação para editar em JSON.
+  // gráficos e outros: resumo + indicação de JSON
   return (
-    <div style={{ fontSize: 12.5, color: "#8B8698", background: "#faf9fd", border: "1px dashed #E3DEF0", borderRadius: 8, padding: "10px 12px" }}>
-      <b style={{ color: "#5A31C9" }}>{blockTitle(block)}</b> — este tipo de bloco edita-se no <b>modo JSON</b> (gráficos e configurações avançadas).
+    <div style={{ fontSize: 12.5, color: "var(--ui-muted)", background: "var(--ui-panel)", border: "1px dashed var(--ui-border-dashed)", borderRadius: 8, padding: "10px 12px" }}>
+      <b style={{ color: "var(--ui-accent)" }}>{blockTitle(block, t)}</b> — {t("json_only")}
     </div>
   );
 }
 
-function blockTitle(b: any) {
-  const names: Record<string, string> = {
-    kpis: "KPIs", card: "Cartão", row: "Linha (lado a lado)", barChart: "Gráfico de barras", areaChart: "Gráfico de área",
-    table: "Tabela", note: "Nota", banner: "Banner", synthesis: "Síntese", callout: "Callout", funnel: "Funil",
-    progress: "Progresso", heading: "Cabeçalho", text: "Texto", spacer: "Espaço",
-  };
-  return names[b?.type] || b?.type || "Bloco";
-}
-
 /* ---------- editor principal ---------- */
 export default function EditorClient({ row }: { row: ReportRow }) {
+  const { t } = usePrefs();
   const supabase = useState(() => createClient())[0];
   const [obj, setObj] = useState<Report>(row.data);
   const [text, setText] = useState(() => JSON.stringify(row.data, null, 2));
@@ -309,24 +314,21 @@ export default function EditorClient({ row }: { row: ReportRow }) {
     [supabase, row.id]
   );
 
-  // autosave sempre que o objeto muda (formulário ou JSON válido)
   useEffect(() => {
     if (first.current) { first.current = false; return; }
-    const t = setTimeout(() => persist(obj), 600);
-    return () => clearTimeout(t);
+    const tm = setTimeout(() => persist(obj), 600);
+    return () => clearTimeout(tm);
   }, [obj, persist]);
 
-  // modo JSON: validar texto -> objeto
   useEffect(() => {
     if (mode !== "json") return;
-    const t = setTimeout(() => {
+    const tm = setTimeout(() => {
       try { const p = JSON.parse(text); setJsonError(""); setObj(p); }
       catch (e: any) { setJsonError(e.message); }
     }, 500);
-    return () => clearTimeout(t);
+    return () => clearTimeout(tm);
   }, [text, mode]);
 
-  // edição por formulário -> atualiza objeto + espelha no texto
   const commit = useCallback((next: Report) => {
     setObj(next);
     setText(JSON.stringify(next, null, 2));
@@ -350,101 +352,100 @@ export default function EditorClient({ row }: { row: ReportRow }) {
   }
 
   const publicUrl = typeof window !== "undefined" ? `${window.location.origin}/r/${row.id}` : "";
-
-  // normaliza abas (suporta report com .blocks em vez de .tabs)
   const tabs = obj.tabs && obj.tabs.length ? obj.tabs : [{ label: "", blocks: (obj as any).blocks || [] }];
   const ti = Math.min(activeTab, tabs.length - 1);
   const setTabs = (next: any[]) => commit(Object.assign({}, obj, { tabs: next, blocks: undefined }));
   const setMeta = (key: string, val: any) => commit(Object.assign({}, obj, { meta: Object.assign({}, obj.meta, { [key]: val }) }));
 
+  const headerBtn: React.CSSProperties = { border: "1px solid rgba(255,255,255,.22)", background: "transparent", color: "#fff", borderRadius: 8, padding: "6px 11px", fontSize: 12.5, cursor: "pointer", fontWeight: 600 };
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      <header style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 18px", background: "#241A38", color: "#fff", flexWrap: "wrap" }}>
-        <Link href="/dashboard" style={{ color: "#B9A7EE", textDecoration: "none", fontSize: 12.5, fontWeight: 600 }}>← Relatórios</Link>
-        <button onClick={() => setCollapsed((c) => !c)} title={collapsed ? "Mostrar editor" : "Recolher editor (foco no relatório)"}
-          style={{ border: "1px solid rgba(255,255,255,.22)", background: "transparent", color: "#fff", borderRadius: 8, padding: "6px 11px", fontSize: 12.5, cursor: "pointer", fontWeight: 600 }}>
-          {collapsed ? "⟩ Editar" : "⟨ Recolher"}
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "var(--ui-bg)" }}>
+      <header style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 18px", background: "var(--ui-header-bg)", color: "#fff", flexWrap: "wrap" }}>
+        <Link href="/dashboard" style={{ color: "var(--ui-accent-soft)", textDecoration: "none", fontSize: 12.5, fontWeight: 600 }}>← {t("back_reports")}</Link>
+        <button onClick={() => setCollapsed((c) => !c)} title={collapsed ? t("expand") : t("collapse")} style={headerBtn}>
+          {collapsed ? `⟩ ${t("expand")}` : `⟨ ${t("collapse")}`}
         </button>
         <span style={{ fontFamily: "Lora, serif", fontSize: 15 }}>{obj.meta?.title || "Relatório"}</span>
-        <span style={{ fontSize: 11.5, marginLeft: 8, color: save === "error" ? "#E7A886" : "#B9A7EE" }}>
-          {save === "saving" ? "a guardar…" : save === "saved" ? "guardado ✓" : save === "error" ? "erro ao guardar" : ""}
+        <span style={{ fontSize: 11.5, marginLeft: 8, color: save === "error" ? "#E7A886" : "var(--ui-accent-soft)" }}>
+          {save === "saving" ? t("saving") : save === "saved" ? t("saved") : save === "error" ? t("save_error") : ""}
         </span>
-        <div style={{ marginLeft: "auto", display: "flex", gap: 10, alignItems: "center" }}>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <PrefsBar variant="dark" />
+          <button onClick={() => downloadStandalone(obj)} style={{ ...headerBtn }}>⬇ {t("download_html")}</button>
           <label style={{ fontSize: 12.5, display: "flex", gap: 6, alignItems: "center", cursor: "pointer" }}>
-            <input type="checkbox" checked={isPublic} onChange={togglePublic} /> Público
+            <input type="checkbox" checked={isPublic} onChange={togglePublic} /> {t("public_toggle")}
           </label>
-          {isPublic && <a href={publicUrl} target="_blank" rel="noreferrer" style={{ color: "#fff", fontSize: 12.5, border: "1px solid rgba(255,255,255,.22)", borderRadius: 8, padding: "7px 12px", textDecoration: "none" }}>Abrir link público ↗</a>}
+          {isPublic && <a href={`/r/${row.id}`} target="_blank" rel="noreferrer" style={{ color: "#fff", fontSize: 12.5, border: "1px solid rgba(255,255,255,.22)", borderRadius: 8, padding: "7px 12px", textDecoration: "none" }}>{t("open_public")}</a>}
         </div>
       </header>
 
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
         {!collapsed && (
-          <div style={{ width: "44%", minWidth: 380, maxWidth: 640, display: "flex", flexDirection: "column", borderRight: "1px solid #ECEAF2", background: "#faf9fd" }}>
-            {/* barra de modo */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderBottom: "1px solid #ECEAF2", flexWrap: "wrap" }}>
-              <div style={{ display: "inline-flex", background: "#ECEAF2", borderRadius: 999, padding: 3 }}>
+          <div style={{ width: "44%", minWidth: 380, maxWidth: 640, display: "flex", flexDirection: "column", borderRight: "1px solid var(--ui-border)", background: "var(--ui-panel)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderBottom: "1px solid var(--ui-border)", flexWrap: "wrap" }}>
+              <div style={{ display: "inline-flex", background: "var(--ui-border)", borderRadius: 999, padding: 3 }}>
                 {(["form", "json"] as Mode[]).map((m) => (
-                  <button key={m} onClick={() => switchMode(m)} style={{ border: "none", cursor: "pointer", padding: "6px 14px", borderRadius: 999, fontSize: 12.5, fontWeight: 600, fontFamily: "Poppins, sans-serif", background: mode === m ? "#241A38" : "transparent", color: mode === m ? "#fff" : "#8B8698" }}>
-                    {m === "form" ? "Formulário" : "JSON"}
+                  <button key={m} onClick={() => switchMode(m)} style={{ border: "none", cursor: "pointer", padding: "6px 14px", borderRadius: 999, fontSize: 12.5, fontWeight: 600, fontFamily: "Poppins, sans-serif", background: mode === m ? "var(--ui-header-bg)" : "transparent", color: mode === m ? "#fff" : "var(--ui-muted)" }}>
+                    {m === "form" ? t("mode_form") : t("mode_json")}
                   </button>
                 ))}
               </div>
-              <button onClick={copyPrompt} style={{ ...chip, marginLeft: "auto" }}>{copied ? "copiado ✓" : "Instruções p/ Claude"}</button>
+              <button onClick={copyPrompt} style={{ ...chip, marginLeft: "auto" }}>{copied ? t("copied") : t("claude_btn")}</button>
             </div>
 
             <div style={{ flex: 1, overflowY: "auto" }}>
               {mode === "json" ? (
                 <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-                  <div style={{ padding: "10px 14px 0", fontSize: 11.5, color: jsonError ? "#C0533B" : "#2FA66B" }}>
-                    {jsonError ? "⚠ JSON inválido: " + jsonError : "✓ JSON válido — guardado automaticamente"}
+                  <div style={{ padding: "10px 14px 0", fontSize: 11.5, color: jsonError ? "var(--ui-danger)" : "var(--ui-good)" }}>
+                    {jsonError ? t("json_invalid") + jsonError : t("json_valid")}
                   </div>
                   <textarea value={text} spellCheck={false} onChange={(e) => setText(e.target.value)}
-                    style={{ flex: 1, minHeight: 300, border: "none", outline: "none", resize: "none", padding: "10px 14px", fontFamily: "ui-monospace, Menlo, Consolas, monospace", fontSize: 12, lineHeight: 1.5, color: "#2B2440", background: "transparent" }} />
+                    style={{ flex: 1, minHeight: 300, border: "none", outline: "none", resize: "none", padding: "10px 14px", fontFamily: "ui-monospace, Menlo, Consolas, monospace", fontSize: 12, lineHeight: 1.5, color: "var(--ui-text)", background: "transparent" }} />
                 </div>
               ) : (
                 <div style={{ padding: 14 }}>
-                  <Section title="Cabeçalho" eyebrow="meta" open>
-                    <SelectField label="Tema" value={obj.meta?.theme || "P"} onChange={(v: any) => setMeta("theme", v)} options={THEME_OPTS} />
-                    <Field label="Período" value={obj.meta?.period} onChange={(v: any) => setMeta("period", v)} />
-                    <Field label="Marca / cliente (eyebrow)" value={obj.meta?.brand} onChange={(v: any) => setMeta("brand", v)} />
-                    <Field label="Título" value={obj.meta?.title} onChange={(v: any) => setMeta("title", v)} />
-                    <Field label="Intro" value={obj.meta?.intro} onChange={(v: any) => setMeta("intro", v)} area={3} />
-                    <Field label="Rodapé (sidebar)" value={obj.meta?.footer} onChange={(v: any) => setMeta("footer", v)} area={2} />
-                    <Field label="Notas de leitura" value={obj.meta?.readingNotes} onChange={(v: any) => setMeta("readingNotes", v)} area={4} />
+                  <Section title={t("sec_header")} eyebrow="meta" open>
+                    <SelectField label={t("f_theme")} value={obj.meta?.theme || "P"} onChange={(v: any) => setMeta("theme", v)} options={THEME_OPTS} />
+                    <Field label={t("f_period")} value={obj.meta?.period} onChange={(v: any) => setMeta("period", v)} />
+                    <Field label={t("f_brand")} value={obj.meta?.brand} onChange={(v: any) => setMeta("brand", v)} />
+                    <Field label={t("f_title")} value={obj.meta?.title} onChange={(v: any) => setMeta("title", v)} />
+                    <Field label={t("f_intro")} value={obj.meta?.intro} onChange={(v: any) => setMeta("intro", v)} area={3} />
+                    <Field label={t("f_footer")} value={obj.meta?.footer} onChange={(v: any) => setMeta("footer", v)} area={2} />
+                    <Field label={t("f_notes")} value={obj.meta?.readingNotes} onChange={(v: any) => setMeta("readingNotes", v)} area={4} />
                   </Section>
 
-                  {/* menu superior = abas */}
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap", margin: "14px 0 10px" }}>
                     {tabs.map((tb: any, i: number) => (
-                      <button key={i} onClick={() => setActiveTab(i)} style={{ border: "1px solid #ECEAF2", cursor: "pointer", padding: "7px 12px", borderRadius: 999, fontSize: 12.5, fontWeight: 600, fontFamily: "Poppins, sans-serif", background: i === ti ? "#5A31C9" : "#fff", color: i === ti ? "#fff" : "#241A38" }}>
-                        {tb.label || `Aba ${i + 1}`}
+                      <button key={i} onClick={() => setActiveTab(i)} style={{ border: "1px solid var(--ui-border)", cursor: "pointer", padding: "7px 12px", borderRadius: 999, fontSize: 12.5, fontWeight: 600, fontFamily: "Poppins, sans-serif", background: i === ti ? "var(--ui-accent)" : "var(--ui-surface)", color: i === ti ? "#fff" : "var(--ui-text)" }}>
+                        {tb.label || `${t("tab_word")} ${i + 1}`}
                       </button>
                     ))}
                   </div>
 
-                  <Section title={`Aba: ${tabs[ti].label || `Aba ${ti + 1}`}`} eyebrow={`${(tabs[ti].blocks || []).length} blocos`} open>
-                    <Field label="Nome da aba" value={tabs[ti].label} onChange={(v: any) => setTabs(tabs.map((x: any, j: number) => (j === ti ? { ...x, label: v } : x)))} />
+                  <Section title={`${t("tab_word")}: ${tabs[ti].label || `${t("tab_word")} ${ti + 1}`}`} eyebrow={`${(tabs[ti].blocks || []).length} ${t("blocks_word")}`} open>
+                    <Field label={t("tab_name")} value={tabs[ti].label} onChange={(v: any) => setTabs(tabs.map((x: any, j: number) => (j === ti ? { ...x, label: v } : x)))} />
                     <div style={{ marginTop: 6 }}>
                       {(tabs[ti].blocks || []).map((b: any, bi: number) => (
-                        <Section key={bi} title={blockTitle(b)} eyebrow={b.type} open={false}>
+                        <Section key={bi} title={blockTitle(b, t)} eyebrow={b.type} open={false}>
                           <BlockForm block={b} onChange={(nb) => setTabs(tabs.map((x: any, j: number) => (j === ti ? { ...x, blocks: x.blocks.map((y: any, k: number) => (k === bi ? nb : y)) } : x)))} />
                         </Section>
                       ))}
-                      {(tabs[ti].blocks || []).length === 0 && <div style={{ fontSize: 12, color: "#8B8698" }}>Esta aba não tem blocos.</div>}
+                      {(tabs[ti].blocks || []).length === 0 && <div style={{ fontSize: 12, color: "var(--ui-muted)" }}>{t("no_blocks")}</div>}
                     </div>
                   </Section>
-                  <div style={{ fontSize: 11, color: "#8B8698", marginTop: 4 }}>Para adicionar/remover abas ou blocos novos, usa o modo JSON (ou pede ao Claude com o botão acima).</div>
+                  <div style={{ fontSize: 11, color: "var(--ui-muted)", marginTop: 4 }}>{t("add_remove_hint")}</div>
                 </div>
               )}
             </div>
           </div>
         )}
 
-        <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "#fff", position: "relative" }}>
+        <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--ui-surface)", position: "relative" }}>
           {collapsed && (
-            <button onClick={() => setCollapsed(false)} title="Mostrar editor"
-              style={{ position: "absolute", top: 14, left: 14, zIndex: 10, border: "1px solid #ECEAF2", background: "#fff", color: "#5A31C9", borderRadius: 9, padding: "8px 13px", fontSize: 12.5, fontWeight: 600, cursor: "pointer", boxShadow: "0 2px 8px rgba(20,16,40,.12)" }}>
-              ⟩ Editar
+            <button onClick={() => setCollapsed(false)} title={t("expand")}
+              style={{ position: "absolute", top: 14, left: 14, zIndex: 10, border: "1px solid var(--ui-border)", background: "var(--ui-surface)", color: "var(--ui-accent)", borderRadius: 9, padding: "8px 13px", fontSize: 12.5, fontWeight: 600, cursor: "pointer", boxShadow: "var(--ui-shadow)" }}>
+              ⟩ {t("expand")}
             </button>
           )}
           <ReportView data={obj} />

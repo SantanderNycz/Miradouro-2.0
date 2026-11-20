@@ -3,6 +3,54 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { color-scheme: light; }
+/* ---- Tokens da interface da app (claro por defeito) ---- */
+:root {
+  color-scheme: light;
+  --ui-bg: #F7F5FB;
+  --ui-surface: #FFFFFF;
+  --ui-panel: #FAF9FD;
+  --ui-text: #2B2440;
+  --ui-muted: #8B8698;
+  --ui-border: #ECEAF2;
+  --ui-border-dashed: #E3DEF0;
+  --ui-header-bg: #241A38;
+  --ui-header-text: #FFFFFF;
+  --ui-input-bg: #FFFFFF;
+  --ui-accent: #5A31C9;
+  --ui-accent-soft: #B9A7EE;
+  --ui-good: #2FA66B;
+  --ui-danger: #C0533B;
+  --ui-login-bg: #241A38;
+  --ui-card-subtle: #FCFBFE;
+  --ui-shadow: 0 1px 2px rgba(20,16,40,.04), 0 16px 36px -18px rgba(20,16,40,.16);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ui-bg: #140F1C;
+  --ui-surface: #201829;
+  --ui-panel: #1B1426;
+  --ui-text: #ECE9F4;
+  --ui-muted: #9A92A9;
+  --ui-border: #322A42;
+  --ui-border-dashed: #3A3150;
+  --ui-header-bg: #0F0B16;
+  --ui-header-text: #FFFFFF;
+  --ui-input-bg: #241B33;
+  --ui-accent: #8468E6;
+  --ui-accent-soft: #B9A7EE;
+  --ui-good: #4BBE85;
+  --ui-danger: #E07A5F;
+  --ui-login-bg: #0F0B16;
+  --ui-card-subtle: #241B33;
+  --ui-shadow: 0 1px 2px rgba(0,0,0,.3), 0 18px 40px -20px rgba(0,0,0,.6);
+}
+
 html, body { padding: 0; margin: 0; }
-body { font-family: Poppins, system-ui, sans-serif; background: #F7F5FB; color: #2B2440; -webkit-font-smoothing: antialiased; }
+body {
+  font-family: Poppins, system-ui, sans-serif;
+  background: var(--ui-bg);
+  color: var(--ui-text);
+  -webkit-font-smoothing: antialiased;
+  transition: background .25s ease, color .25s ease;
+}

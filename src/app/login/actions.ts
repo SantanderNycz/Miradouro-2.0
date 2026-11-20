@@ -24,7 +24,7 @@ export async function signUp(_prev: unknown, formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({ email, password });
   if (error) return { error: error.message };
-  return { ok: "Conta criada. Se a confirmação por email estiver ativa, confirma e depois inicia sessão." };
+  return { ok: true }; // a mensagem é mostrada (traduzida) no cliente
 }
 
 export async function signOut() {
