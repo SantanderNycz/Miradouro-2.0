@@ -19,6 +19,9 @@ export default function LoginPage() {
     const res = mode === "in" ? await signIn(null, fd) : await signUp(null, fd);
     setLoading(false);
     if (res) setMsg(res);
+    // Depois de registar com sucesso, muda automaticamente para o ecrã de login
+    // (sem obrigar o utilizador a clicar em "Iniciar sessão").
+    if (mode === "up" && res && res.ok) setMode("in");
   }
 
   return (

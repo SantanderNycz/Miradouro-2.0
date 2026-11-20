@@ -22,6 +22,13 @@ drop trigger if exists reports_touch on public.reports;
 create trigger reports_touch before update on public.reports
   for each row execute function public.touch_updated_at();
 
+-- Permissões ao nível da tabela (GRANT). O RLS filtra *linhas*, mas os roles
+-- anon/authenticated também precisam de privilégios na tabela, senão dá
+-- "42501 permission denied for table reports".
+grant usage on schema public to anon, authenticated;
+grant select on public.reports to anon;                                  -- vista pública (is_public)
+grant select, insert, update, delete on public.reports to authenticated; -- dono autenticado
+
 -- Row Level Security: cada utilizador só vê/edita os seus relatórios;
 -- relatórios marcados is_public podem ser lidos por qualquer pessoa.
 alter table public.reports enable row level security;
