@@ -3,16 +3,22 @@
 // engine.tsx da app) e transpila-o no browser do visitante via Babel standalone, pelo
 // que o HTML exportado é visualmente idêntico à pré-visualização da app.
 import ENGINE_SRC from "@/report/engine.standalone.txt";
+// Fonte dos títulos (Dashboard) como data URL (base64), para o HTML exportado a ter
+// embutida — fica idêntico mesmo offline/externo (gerado de Dashboard-Regular.otf).
+import { DASHBOARD_FONT_DATA_URL } from "@/fonts/dashboardFontBase64";
 import type { Report } from "@/types/report";
 
 export function buildStandaloneHtml(report: Report): string {
   const S = "<scr" + "ipt", E = "</scr" + "ipt>";
+  // Scripts de CDN com Subresource Integrity (SRI): se o ficheiro servido não bater
+  // certo com o hash, o browser recusa-o — protege os relatórios exportados de um CDN
+  // comprometido. crossorigin="anonymous" é obrigatório para o SRI em cross-origin.
   const cdn = [
-    S + ' crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js">' + E,
-    S + ' crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js">' + E,
-    S + ' crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js">' + E,
-    S + ' crossorigin src="https://cdn.jsdelivr.net/npm/recharts@2.12.7/umd/Recharts.min.js">' + E,
-    S + ' src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.4/babel.min.js">' + E,
+    S + ' crossorigin="anonymous" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js">' + E,
+    S + ' crossorigin="anonymous" integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1" src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js">' + E,
+    S + ' crossorigin="anonymous" integrity="sha384-/AfDwVDXNopzPvhxMPQ11y1OCpR6mVkWx47qzSwIiquvxkcMkZddEzDNtIOtfCpk" src="https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js">' + E,
+    S + ' crossorigin="anonymous" integrity="sha384-SI4nuZ/KQSVbfqEgBsQkT+A/93E5FZykOt+oFEDxiHgKbx7C3Y9rUPDjTofCLTEM" src="https://cdn.jsdelivr.net/npm/recharts@2.12.7/umd/Recharts.min.js">' + E,
+    S + ' crossorigin="anonymous" integrity="sha384-x/ilTFv/u/eu6YSmkFDZl5V5Mm/pkxxcVv2cVJOrr1J0rvILhMvRBCy6yA75wYBj" src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.4/babel.min.js">' + E,
   ].join("\n  ");
 
   const dataJson = JSON.stringify(report).replace(/</g, "\\u003c");
@@ -33,6 +39,7 @@ export function buildStandaloneHtml(report: Report): string {
     '  <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />',
     '  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet" />',
     "  <style>",
+    "    @font-face { font-family: 'Dashboard'; src: url('" + DASHBOARD_FONT_DATA_URL + "') format('opentype'); font-weight: 400; font-display: swap; }",
     "    * { box-sizing: border-box; } html, body { margin: 0; padding: 0; }",
     "    body { font-family: Poppins, system-ui, sans-serif; background: #241A38; -webkit-font-smoothing: antialiased; }",
     "    #root { min-height: 100vh; }",

@@ -1,6 +1,15 @@
 import type { Metadata } from "next";
+import localFont from "next/font/local";
 import "./globals.css";
 import { PrefsProvider } from "@/lib/prefs";
+
+// Fonte local para TÍTULOS (display). Corpo/UI continuam em Poppins.
+const dashboard = localFont({
+  src: "../fonts/Dashboard-Regular.otf",
+  variable: "--font-display",
+  weight: "400",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Miradouro",
@@ -15,7 +24,7 @@ const noFlash = `(function(){try{
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-PT" suppressHydrationWarning>
+    <html lang="pt-PT" className={dashboard.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: noFlash }} />
       </head>

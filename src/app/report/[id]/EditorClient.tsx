@@ -15,9 +15,9 @@ const clone = <T,>(o: T): T => JSON.parse(JSON.stringify(o));
 const TOKENS = ["navy", "navyLight", "gold", "goldLight", "slate", "terracotta", "sage"];
 const THEME_OPTS = [
   { value: "P", label: "P — Beringela" },
-  { value: "A", label: "A — Grafite & Aço" },
-  { value: "B", label: "B — Ardósia & Âmbar" },
-  { value: "C", label: "C — Petróleo" },
+  { value: "A", label: "A — Mixpanel Eggplant" },
+  { value: "B", label: "B — Mixpanel Indigo" },
+  { value: "C", label: "C — Mixpanel Grape" },
 ];
 
 const CLAUDE_PROMPT = [
@@ -351,7 +351,6 @@ export default function EditorClient({ row }: { row: ReportRow }) {
     try { await navigator.clipboard.writeText(CLAUDE_PROMPT); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch {}
   }
 
-  const publicUrl = typeof window !== "undefined" ? `${window.location.origin}/r/${row.id}` : "";
   const tabs = obj.tabs && obj.tabs.length ? obj.tabs : [{ label: "", blocks: (obj as any).blocks || [] }];
   const ti = Math.min(activeTab, tabs.length - 1);
   const setTabs = (next: any[]) => commit(Object.assign({}, obj, { tabs: next, blocks: undefined }));
@@ -366,7 +365,7 @@ export default function EditorClient({ row }: { row: ReportRow }) {
         <button onClick={() => setCollapsed((c) => !c)} title={collapsed ? t("expand") : t("collapse")} style={headerBtn}>
           {collapsed ? `⟩ ${t("expand")}` : `⟨ ${t("collapse")}`}
         </button>
-        <span style={{ fontFamily: "Lora, serif", fontSize: 15 }}>{obj.meta?.title || "Relatório"}</span>
+        <span style={{ fontFamily: "var(--font-display), Lora, serif", fontSize: 15 }}>{obj.meta?.title || "Relatório"}</span>
         <span style={{ fontSize: 11.5, marginLeft: 8, color: save === "error" ? "#E7A886" : "var(--ui-accent-soft)" }}>
           {save === "saving" ? t("saving") : save === "saved" ? t("saved") : save === "error" ? t("save_error") : ""}
         </span>

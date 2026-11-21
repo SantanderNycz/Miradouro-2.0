@@ -22,7 +22,7 @@ export default function DashboardClient({ rows, email }: { rows: Row[]; email: s
       <header style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 24px", background: "var(--ui-header-bg)", color: "#fff", flexWrap: "wrap" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={logo.src} alt="Miradouro" style={{ height: 28, width: "auto", display: "block" }} />
-        <span style={{ fontFamily: "Lora, serif", fontSize: 16 }}>{t("my_reports")}</span>
+        <span style={{ fontFamily: "var(--font-display), Lora, serif", fontSize: 16 }}>{t("my_reports")}</span>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <PrefsBar variant="dark" />
           <span style={{ fontSize: 12.5, color: "rgba(255,255,255,.7)" }}>{email}</span>
@@ -34,7 +34,7 @@ export default function DashboardClient({ rows, email }: { rows: Row[]; email: s
 
       <main style={{ maxWidth: 980, margin: "0 auto", padding: "28px 24px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-          <h1 style={{ fontFamily: "Lora, serif", fontSize: 24, margin: 0, color: "var(--ui-text)" }}>{t("reports")}</h1>
+          <h1 style={{ fontFamily: "var(--font-display), Lora, serif", fontSize: 24, margin: 0, color: "var(--ui-text)" }}>{t("reports")}</h1>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <Link href="/compare" style={{ textDecoration: "none", border: "1px solid var(--ui-border)", background: "var(--ui-surface)", color: "var(--ui-text)", fontWeight: 600, fontSize: 13, padding: "9px 15px", borderRadius: 999 }}>⇆ {t("compare")}</Link>
             <form action={createReport}>

@@ -58,7 +58,7 @@ export default function CompareClient({ reports }: { reports: Item[] }) {
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "var(--ui-bg)" }}>
       <header style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 18px", background: "var(--ui-header-bg)", color: "#fff", flexWrap: "wrap" }}>
         <Link href="/dashboard" style={{ color: "var(--ui-accent-soft)", textDecoration: "none", fontSize: 12.5, fontWeight: 600 }}>← {t("back_reports")}</Link>
-        <span style={{ fontFamily: "Lora, serif", fontSize: 15 }}>{t("compare_title")}</span>
+        <span style={{ fontFamily: "var(--font-display), Lora, serif", fontSize: 15 }}>{t("compare_title")}</span>
         <div style={{ marginLeft: "auto", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <div style={{ display: "inline-flex", background: "rgba(255,255,255,.1)", borderRadius: 999, padding: 3 }}>
             {(["side", "stack"] as Layout[]).map((l) => (

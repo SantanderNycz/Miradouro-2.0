@@ -32,7 +32,7 @@ export default function LoginPage() {
       </div>
       <div style={{ width: "100%", maxWidth: 380, background: "var(--ui-surface)", borderRadius: 20, padding: "30px 28px", boxShadow: "0 30px 70px -30px rgba(0,0,0,.5)" }}>
         <div style={{ fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--ui-accent)", fontWeight: 600 }}>Miradouro</div>
-        <h1 style={{ fontFamily: "Lora, serif", fontSize: 26, margin: "6px 0 18px", color: "var(--ui-text)" }}>
+        <h1 style={{ fontFamily: "var(--font-display), Lora, serif", fontSize: 26, margin: "6px 0 18px", color: "var(--ui-text)" }}>
           {mode === "in" ? t("login_in") : t("login_up")}
         </h1>
         {!configured && (

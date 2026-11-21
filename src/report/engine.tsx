@@ -1,23 +1,27 @@
 "use client";
 /* Motor de render do relatório (blocos + temas). Portado do estúdio Miradouro. */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState } from "react";
+import React, { useState, useContext, createContext } from "react";
 import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, ReferenceLine } from "recharts";
 
     const THEMES = {
       P: { name: "Beringela", bg: "#F7F5FB", surface: "#FFFFFF", navy: "#241A38", navyLight: "#5A31C9", gold: "#5A31C9", goldLight: "#B9A7EE", slate: "#9AA3AE", terracotta: "#C0533B", sage: "#2FA66B", text: "#2B2440", muted: "#8B8698", border: "#ECEAF2" },
-      A: { name: "Grafite & Aço", bg: "#F6F7F9", surface: "#FFFFFF", navy: "#1C2530", navyLight: "#1D5B7E", gold: "#1D5B7E", goldLight: "#8FB0C4", slate: "#8A94A2", terracotta: "#B4432E", sage: "#3E7C63", text: "#1C2530", muted: "#5B6673", border: "#E6E8EC" },
-      B: { name: "Ardósia & Âmbar", bg: "#F7F5F0", surface: "#FFFFFF", navy: "#20242B", navyLight: "#9A6B2A", gold: "#A9762F", goldLight: "#C99A5B", slate: "#8C8A85", terracotta: "#A6462F", sage: "#5E7A57", text: "#20242B", muted: "#6A6A66", border: "#E7E3DA" },
-      C: { name: "Petróleo", bg: "#F5F7F7", surface: "#FFFFFF", navy: "#16232B", navyLight: "#1E6E6A", gold: "#1E6E6A", goldLight: "#77ABA8", slate: "#8A9699", terracotta: "#C05640", sage: "#3F7D5E", text: "#16232B", muted: "#5A6A6E", border: "#E3E8E8" },
+      A: { name: "Mixpanel Eggplant", bg: "#FAF8FF", surface: "#FFFFFF", navy: "#15003F", navyLight: "#7856FF", gold: "#6041CF", goldLight: "#C9BBFF", slate: "#8A8595", terracotta: "#E24A2E", sage: "#12A594", text: "#1F2023", muted: "#797979", border: "#EAE6F5" },
+      B: { name: "Mixpanel Indigo", bg: "#F7F6FD", surface: "#FFFFFF", navy: "#2E1670", navyLight: "#6041CF", gold: "#5B3FC9", goldLight: "#B4A1FF", slate: "#8A8595", terracotta: "#E24A2E", sage: "#12A594", text: "#1F2023", muted: "#797979", border: "#E7E3F3" },
+      C: { name: "Mixpanel Grape", bg: "#FBF9FF", surface: "#FFFFFF", navy: "#472BA0", navyLight: "#7856FF", gold: "#6D4DE6", goldLight: "#C9BBFF", slate: "#8A8595", terracotta: "#E24A2E", sage: "#12A594", text: "#1F2023", muted: "#797979", border: "#ECE6F8" },
     };
     const SHADOW = "0 1px 2px rgba(20,16,40,.04), 0 16px 36px -18px rgba(20,16,40,.16)";
-    let C = THEMES.P;
-    let PAL = { navy: C.navy, navyLight: C.navyLight, sage: C.sage, terracotta: C.terracotta, gold: C.gold, goldLight: C.goldLight, slate: C.slate };
-    function applyTheme(name) {
-      C = THEMES[name] || THEMES.P;
-      PAL = { navy: C.navy, navyLight: C.navyLight, sage: C.sage, terracotta: C.terracotta, gold: C.gold, goldLight: C.goldLight, slate: C.slate };
+
+    // Tema por Context — isola cada relatório (ex.: dois lado a lado no Comparar, com
+    // temas diferentes, não se contaminam, mesmo em re-renders de blocos isolados).
+    const ThemeCtx = createContext(THEMES.P);
+    function useTheme() {
+      const C = useContext(ThemeCtx);
+      const PAL = { navy: C.navy, navyLight: C.navyLight, sage: C.sage, terracotta: C.terracotta, gold: C.gold, goldLight: C.goldLight, slate: C.slate };
+      const col = (k) => (k == null ? C.navy : (PAL[k] || (String(k).charAt(0) === "#" ? k : C.navy)));
+      return { C, col };
     }
-    const col = (k) => (k == null ? C.navy : (PAL[k] || (String(k).charAt(0) === "#" ? k : C.navy)));
+
     const eur = (v) => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Number(v) || 0);
     const num = (v) => (v == null || v === "" ? 0 : Number(v));
 
@@ -40,9 +44,9 @@ import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, L
       }
     }
 
-    function rich(str, boldColor = null) {
+    function rich(str, boldColor) {
       if (str == null) return null;
-      const c = boldColor || C.navy;
+      const c = boldColor || "#1F2023";
       return String(str).split(/(\*\*[^*]+\*\*)/g).map((p, i) =>
         (p.startsWith("**") && p.endsWith("**"))
           ? React.createElement("b", { key: i, style: { color: c } }, p.slice(2, -2))
@@ -50,12 +54,13 @@ import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, L
     }
 
     function Title({ eyebrow, title, subtitle, right }) {
+      const { C } = useTheme();
       if (!eyebrow && !title && !subtitle && !right) return null;
       return (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 18 }}>
           <div style={{ flex: "1 1 340px" }}>
             {eyebrow && <div style={{ fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: C.gold, fontWeight: 700, marginBottom: 5 }}>{eyebrow}</div>}
-            {title && <div style={{ fontFamily: "'Lora', serif", fontSize: 20, color: C.navy }}>{title}</div>}
+            {title && <div style={{ fontFamily: "var(--font-display), 'Lora', serif", fontSize: 20, color: C.navy }}>{title}</div>}
             {subtitle && <div style={{ fontSize: 12.5, color: C.muted, marginTop: 5, maxWidth: 720, lineHeight: 1.55 }}>{subtitle}</div>}
           </div>
           {right}
@@ -64,11 +69,13 @@ import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, L
     }
 
     function Note({ tone, children }) {
-      const t = { neutral: { bg: "rgba(23,32,51,.04)", bar: C.navyLight }, warn: { bg: "rgba(217,45,32,.06)", bar: C.terracotta }, good: { bg: "rgba(18,183,106,.08)", bar: C.sage }, gold: { bg: "rgba(79,70,229,.06)", bar: C.gold } }[tone || "neutral"] || { bg: "rgba(23,32,51,.04)", bar: C.navyLight };
+      const { C } = useTheme();
+      const t = { neutral: { bg: C.navy + "0a", bar: C.navyLight }, warn: { bg: C.terracotta + "14", bar: C.terracotta }, good: { bg: C.sage + "14", bar: C.sage }, gold: { bg: C.gold + "12", bar: C.gold } }[tone || "neutral"] || { bg: C.navy + "0a", bar: C.navyLight };
       return <div style={{ marginTop: 16, padding: "14px 17px", background: t.bg, borderLeft: `3px solid ${t.bar}`, borderRadius: 12, fontSize: 12.8, lineHeight: 1.65 }}>{children}</div>;
     }
 
     function Seg({ value, onChange, options }) {
+      const { C } = useTheme();
       return (
         <div style={{ display: "inline-flex", background: C.border, borderRadius: 999, padding: 3, gap: 2 }}>
           {options.map((o) => (
@@ -89,6 +96,7 @@ import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, L
     }
 
     function KpisBlock({ items }) {
+      const { C, col } = useTheme();
       return (
         <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
           {(items || []).map((k, i) => {
@@ -100,7 +108,7 @@ import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, L
                   {k.dot && <span style={{ width: 7, height: 7, borderRadius: "50%", background: col(k.dot) }} />}{k.eyebrow}
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 10, position: "relative", zIndex: 2 }}>
-                  <span style={{ fontFamily: "'Lora', serif", fontSize: 30, fontWeight: 600, color: vcol, lineHeight: 1 }}>{k.value}</span>
+                  <span style={{ fontFamily: "var(--font-display), 'Lora', serif", fontSize: 30, fontWeight: 600, color: vcol, lineHeight: 1 }}>{k.value}</span>
                   {k.delta && <span style={{ fontSize: 12, fontWeight: 600, color: hero ? "#fff" : (k.deltaDir === "down" ? C.terracotta : C.sage) }}>{k.delta}</span>}
                 </div>
                 {k.sub && <div style={{ fontSize: 12, color: hero ? "rgba(255,255,255,.65)" : C.muted, marginTop: 8, lineHeight: 1.45, position: "relative", zIndex: 2 }}>{k.sub}</div>}
@@ -114,6 +122,7 @@ import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, L
     }
 
     function Synthesis({ title, items }) {
+      const { C } = useTheme();
       return (
         <div style={{ background: C.navy, borderRadius: 20, padding: "28px 32px", color: "#fff", boxShadow: SHADOW }}>
           {title && <div style={{ fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: C.goldLight, fontWeight: 700, marginBottom: 14 }}>{title}</div>}
@@ -125,6 +134,7 @@ import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, L
     }
 
     function Callout({ title, text }) {
+      const { C } = useTheme();
       return (
         <div style={{ background: C.navy, borderRadius: 20, padding: "26px 30px", color: "#fff", boxShadow: SHADOW }}>
           {title && <div style={{ fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: C.goldLight, fontWeight: 700, marginBottom: 10 }}>{title}</div>}
@@ -134,17 +144,19 @@ import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, L
     }
 
     function Banner({ tone, text }) {
+      const { C, col } = useTheme();
       const bar = col(tone === "warn" ? "terracotta" : tone === "good" ? "sage" : "gold");
-      return <div style={{ background: `${bar}17`, border: `1px solid ${bar}55`, borderRadius: 12, padding: "14px 18px", fontSize: 12.5, color: C.text, lineHeight: 1.6 }}>{rich(text)}</div>;
+      return <div style={{ background: `${bar}17`, border: `1px solid ${bar}55`, borderRadius: 12, padding: "14px 18px", fontSize: 12.5, color: C.text, lineHeight: 1.6 }}>{rich(text, C.navy)}</div>;
     }
 
     function FunnelBlock({ steps }) {
+      const { col } = useTheme();
       return (
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           {(steps || []).map((s, i) => (
             <div key={i} style={{ flex: "1 1 180px", minWidth: 160, background: col(s.color), borderRadius: 12, padding: "18px 18px", color: "#fff" }}>
               <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.05em", opacity: 0.75, fontWeight: 700, marginBottom: 8 }}>{i + 1}. {s.label}</div>
-              <div style={{ fontFamily: "'Lora', serif", fontSize: 25, lineHeight: 1.05 }}>{s.value}</div>
+              <div style={{ fontFamily: "var(--font-display), 'Lora', serif", fontSize: 25, lineHeight: 1.05 }}>{s.value}</div>
               {s.sub && <div style={{ fontSize: 11.5, opacity: 0.82, marginTop: 6 }}>{s.sub}</div>}
             </div>
           ))}
@@ -153,6 +165,7 @@ import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, L
     }
 
     function ProgressBlock({ items }) {
+      const { C, col } = useTheme();
       return (
         <div>
           {(items || []).map((p, i) => (
@@ -171,6 +184,7 @@ import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, L
     }
 
     function TableBlock({ columns, rows, rowToneKey }) {
+      const { C } = useTheme();
       const cols = columns || [];
       return (
         <div style={{ overflowX: "auto" }}>
@@ -183,7 +197,7 @@ import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, L
             <tbody>
               {(rows || []).map((r, ri) => {
                 const tone = rowToneKey ? r[rowToneKey] : null;
-                const bg = tone === "hero" ? "rgba(110,138,114,.09)" : tone === "exp" ? "rgba(181,98,60,.06)" : "transparent";
+                const bg = tone === "hero" ? C.sage + "16" : tone === "exp" ? C.terracotta + "12" : "transparent";
                 return (
                   <tr key={ri} style={{ borderBottom: `1px solid ${C.border}`, background: bg }}>
                     {cols.map((c, ci) => {
@@ -206,6 +220,7 @@ import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, L
     }
 
     function BarChartBlock({ spec }) {
+      const { C, col } = useTheme();
       const [vi, setVi] = useState(0);
       const active = spec.variants ? Object.assign({}, spec, spec.variants[vi]) : spec;
       const data = active.data || [];
@@ -231,7 +246,7 @@ import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, L
               <CartesianGrid stroke={C.border} vertical={false} />
               <XAxis dataKey={active.xKey || "lb"} tick={{ fontSize: 11.5, fill: C.text }} axisLine={{ stroke: C.border }} tickLine={false} />
               <YAxis domain={active.yDomain || [0, "auto"]} tickFormatter={(v) => fmt(v, active.yFormat)} tick={{ fontSize: 11.5, fill: C.muted }} axisLine={false} tickLine={false} width={active.yWidth || 46} />
-              <Tooltip contentStyle={{ background: C.navy, border: "none", borderRadius: 8, fontSize: 12 }} labelStyle={{ color: C.goldLight, fontFamily: "'Lora', serif" }} itemStyle={{ color: "#fff" }} formatter={tip} />
+              <Tooltip contentStyle={{ background: C.navy, border: "none", borderRadius: 8, fontSize: 12 }} labelStyle={{ color: C.goldLight, fontFamily: "var(--font-display), 'Lora', serif" }} itemStyle={{ color: "#fff" }} formatter={tip} />
               {active.referenceLine && <ReferenceLine y={active.referenceLine.y} stroke={C.navy} strokeDasharray="5 4" label={active.referenceLine.label ? { value: active.referenceLine.label, position: "insideTopRight", fontSize: 11, fill: C.navy, dy: -6 } : undefined} />}
               {active.legend && <Legend wrapperStyle={{ fontSize: 11.5, paddingTop: 10 }} />}
               {series.map((s, si) => {
@@ -256,6 +271,7 @@ import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, L
     }
 
     function AreaChartBlock({ spec }) {
+      const { C, col } = useTheme();
       const data = spec.data || [];
       const s0 = (spec.series && spec.series[0]) || {};
       const c = col(s0.color || "navyLight");
@@ -274,7 +290,7 @@ import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, L
               <CartesianGrid stroke={C.border} vertical={false} />
               <XAxis dataKey={spec.xKey || "lb"} tick={{ fontSize: 11, fill: C.muted }} axisLine={{ stroke: C.border }} tickLine={false} />
               <YAxis domain={spec.yDomain || [0, "auto"]} tickFormatter={(v) => fmt(v, spec.yFormat)} tick={{ fontSize: 11, fill: C.muted }} axisLine={false} tickLine={false} width={spec.yWidth || 48} />
-              <Tooltip contentStyle={{ background: C.navy, border: "none", borderRadius: 8, fontSize: 12 }} labelStyle={{ color: C.goldLight, fontFamily: "'Lora', serif" }} itemStyle={{ color: "#fff" }} formatter={(v, n, p) => [fmt(v, (spec.tooltip && spec.tooltip.valueFormat) || spec.yFormat), (spec.tooltip && spec.tooltip.extraKey && p && p.payload) ? p.payload[spec.tooltip.extraKey] : (s0.name || "")]} />
+              <Tooltip contentStyle={{ background: C.navy, border: "none", borderRadius: 8, fontSize: 12 }} labelStyle={{ color: C.goldLight, fontFamily: "var(--font-display), 'Lora', serif" }} itemStyle={{ color: "#fff" }} formatter={(v, n, p) => [fmt(v, (spec.tooltip && spec.tooltip.valueFormat) || spec.yFormat), (spec.tooltip && spec.tooltip.extraKey && p && p.payload) ? p.payload[spec.tooltip.extraKey] : (s0.name || "")]} />
               {spec.referenceLine && <ReferenceLine y={spec.referenceLine.y} stroke={C.navy} strokeDasharray="5 4" label={spec.referenceLine.label ? { value: spec.referenceLine.label, position: "insideTopRight", fontSize: 11, fill: C.navy, dy: -6 } : undefined} />}
               <Area type="monotone" dataKey={s0.key || "v"} stroke={c} strokeWidth={2.5} fill={`url(#${gid})`} />
             </AreaChart>
@@ -284,6 +300,7 @@ import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, L
     }
 
     function CardBlock({ block }) {
+      const { C } = useTheme();
       return (
         <div style={{ background: C.surface, borderRadius: 20, padding: "24px 26px", border: `1px solid ${C.border}`, boxShadow: SHADOW }}>
           <Title eyebrow={block.eyebrow} title={block.title} subtitle={block.subtitle} />
@@ -303,6 +320,7 @@ import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, L
     }
 
     function Block({ block }) {
+      const { C } = useTheme();
       if (!block || !block.type) return null;
       switch (block.type) {
         case "kpis": return <KpisBlock items={block.items} />;
@@ -310,7 +328,7 @@ import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, L
         case "row": return <RowBlock block={block} />;
         case "barChart": return <BarChartBlock spec={block} />;
         case "areaChart": return <AreaChartBlock spec={block} />;
-        case "note": return <Note tone={block.tone}>{rich(block.text)}</Note>;
+        case "note": return <Note tone={block.tone}>{rich(block.text, C.navy)}</Note>;
         case "banner": return <Banner tone={block.tone} text={block.text} />;
         case "synthesis": return <Synthesis title={block.title} items={block.items} />;
         case "callout": return <Callout title={block.title} text={block.text} />;
@@ -318,7 +336,7 @@ import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, L
         case "progress": return <ProgressBlock items={block.items} />;
         case "table": return <TableBlock columns={block.columns} rows={block.rows} rowToneKey={block.rowToneKey} />;
         case "heading": return <Title eyebrow={block.eyebrow} title={block.title} subtitle={block.subtitle} />;
-        case "text": return <p style={{ fontSize: 13.5, color: C.muted, lineHeight: 1.6, margin: 0, maxWidth: 760 }}>{rich(block.text)}</p>;
+        case "text": return <p style={{ fontSize: 13.5, color: C.muted, lineHeight: 1.6, margin: 0, maxWidth: 760 }}>{rich(block.text, C.navy)}</p>;
         case "spacer": return <div style={{ height: block.size || 16 }} />;
         default: return null;
       }
@@ -333,7 +351,7 @@ import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, L
     function ReportApp({ data }) {
       const D = data || {};
       const meta = D.meta || {};
-      applyTheme(meta.theme);
+      const C = THEMES[meta.theme] || THEMES.P;
       let tabs = D.tabs;
       if (!tabs || !tabs.length) tabs = [{ label: "", blocks: D.blocks || [] }];
       const [tab, setTab] = useState(0);
@@ -343,6 +361,7 @@ import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, L
       const frameCss = "@media (max-width: 760px){ .mir-app{flex-direction:column !important;} .mir-side{width:auto !important;} .mir-panel{margin-left:0 !important; border-radius:0 !important;} }";
 
       return (
+        <ThemeCtx.Provider value={C}>
         <div style={{ minHeight: "100%", fontFamily: "Poppins, sans-serif", color: C.text, padding: "26px 22px", background: `repeating-linear-gradient(135deg, rgba(255,255,255,.02) 0 2px, transparent 2px 26px), ${C.navy}` }}>
           <style>{frameCss}</style>
           <div className="mir-app" style={{ maxWidth: 1200, margin: "0 auto", display: "flex", background: C.navy, borderRadius: 28, overflow: "hidden", boxShadow: "0 40px 90px -34px rgba(0,0,0,.55)" }}>
@@ -372,7 +391,7 @@ import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, L
                 <div>
                   <div style={{ width: 40, height: 4, borderRadius: 4, background: C.navyLight, marginBottom: 12 }} />
                   {meta.brand && <div style={{ fontSize: 10.5, letterSpacing: "0.11em", textTransform: "uppercase", color: C.gold, fontWeight: 700, marginBottom: 8 }}>{meta.brand}</div>}
-                  {meta.title && <h1 style={{ fontFamily: "'Lora', serif", fontSize: 32, fontWeight: 600, color: C.navy, margin: "0 0 9px", lineHeight: 1.12, letterSpacing: "-.01em" }}>{meta.title}</h1>}
+                  {meta.title && <h1 style={{ fontFamily: "var(--font-display), 'Lora', serif", fontSize: 32, fontWeight: 600, color: C.navy, margin: "0 0 9px", lineHeight: 1.12, letterSpacing: "-.01em" }}>{meta.title}</h1>}
                   {meta.intro && <p style={{ color: C.muted, fontSize: 13.5, maxWidth: 680, margin: 0, lineHeight: 1.6 }}>{meta.intro}</p>}
                 </div>
                 {meta.period && <span style={{ flex: "none", background: C.navyLight, color: "#fff", fontSize: 12, fontWeight: 600, padding: "9px 15px", borderRadius: 999, boxShadow: SHADOW }}>{meta.period}</span>}
@@ -381,15 +400,14 @@ import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, L
               <Blocks list={activeTab.blocks} spacing={16} />
 
               {meta.readingNotes && (
-                <div style={{ background: C.bg, borderRadius: 16, padding: "16px 20px", border: `1px solid ${C.border}`, fontSize: 11.8, color: C.muted, lineHeight: 1.65, marginTop: 16 }}>{rich(meta.readingNotes)}</div>
+                <div style={{ background: C.bg, borderRadius: 16, padding: "16px 20px", border: `1px solid ${C.border}`, fontSize: 11.8, color: C.muted, lineHeight: 1.65, marginTop: 16 }}>{rich(meta.readingNotes, C.navy)}</div>
               )}
             </section>
           </div>
         </div>
+        </ThemeCtx.Provider>
       );
     }
-
-  
 
 export { ReportApp, THEMES };
 export default ReportApp;
