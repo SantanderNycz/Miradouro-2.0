@@ -3,11 +3,12 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { PrefsProvider } from "@/lib/prefs";
 
-// Fonte local para TÍTULOS (display). Corpo/UI continuam em Poppins.
-const dashboard = localFont({
-  src: "../fonts/Dashboard-Regular.otf",
+// Fonte local para TÍTULOS (display) — Josefin Sans (variable, gama 100–700).
+// Corpo/UI continuam em Poppins.
+const josefin = localFont({
+  src: "../fonts/JosefinSans-VariableFont_wght.ttf",
   variable: "--font-display",
-  weight: "400",
+  weight: "100 700",
   display: "swap",
 });
 
@@ -24,7 +25,7 @@ const noFlash = `(function(){try{
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-PT" className={dashboard.variable} suppressHydrationWarning>
+    <html lang="pt-PT" className={josefin.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: noFlash }} />
       </head>

@@ -57,7 +57,7 @@ const { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Le
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 18 }}>
           <div style={{ flex: "1 1 340px" }}>
             {eyebrow && <div style={{ fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: C.gold, fontWeight: 700, marginBottom: 5 }}>{eyebrow}</div>}
-            {title && <div style={{ fontFamily: "'Dashboard', 'Lora', serif", fontSize: 20, color: C.navy }}>{title}</div>}
+            {title && <div style={{ fontFamily: "'Josefin Sans', 'Lora', serif", fontSize: 20, color: C.navy }}>{title}</div>}
             {subtitle && <div style={{ fontSize: 12.5, color: C.muted, marginTop: 5, maxWidth: 720, lineHeight: 1.55 }}>{subtitle}</div>}
           </div>
           {right}
@@ -105,7 +105,7 @@ const { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Le
                   {k.dot && <span style={{ width: 7, height: 7, borderRadius: "50%", background: col(k.dot) }} />}{k.eyebrow}
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 10, position: "relative", zIndex: 2 }}>
-                  <span style={{ fontFamily: "'Dashboard', 'Lora', serif", fontSize: 30, fontWeight: 600, color: vcol, lineHeight: 1 }}>{k.value}</span>
+                  <span style={{ fontFamily: "'Josefin Sans', 'Lora', serif", fontSize: 30, fontWeight: 600, color: vcol, lineHeight: 1 }}>{k.value}</span>
                   {k.delta && <span style={{ fontSize: 12, fontWeight: 600, color: hero ? "#fff" : (k.deltaDir === "down" ? C.terracotta : C.sage) }}>{k.delta}</span>}
                 </div>
                 {k.sub && <div style={{ fontSize: 12, color: hero ? "rgba(255,255,255,.65)" : C.muted, marginTop: 8, lineHeight: 1.45, position: "relative", zIndex: 2 }}>{k.sub}</div>}
@@ -153,7 +153,7 @@ const { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Le
           {(steps || []).map((s, i) => (
             <div key={i} style={{ flex: "1 1 180px", minWidth: 160, background: col(s.color), borderRadius: 12, padding: "18px 18px", color: "#fff" }}>
               <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.05em", opacity: 0.75, fontWeight: 700, marginBottom: 8 }}>{i + 1}. {s.label}</div>
-              <div style={{ fontFamily: "'Dashboard', 'Lora', serif", fontSize: 25, lineHeight: 1.05 }}>{s.value}</div>
+              <div style={{ fontFamily: "'Josefin Sans', 'Lora', serif", fontSize: 25, lineHeight: 1.05 }}>{s.value}</div>
               {s.sub && <div style={{ fontSize: 11.5, opacity: 0.82, marginTop: 6 }}>{s.sub}</div>}
             </div>
           ))}
@@ -243,7 +243,7 @@ const { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Le
               <CartesianGrid stroke={C.border} vertical={false} />
               <XAxis dataKey={active.xKey || "lb"} tick={{ fontSize: 11.5, fill: C.text }} axisLine={{ stroke: C.border }} tickLine={false} />
               <YAxis domain={active.yDomain || [0, "auto"]} tickFormatter={(v) => fmt(v, active.yFormat)} tick={{ fontSize: 11.5, fill: C.muted }} axisLine={false} tickLine={false} width={active.yWidth || 46} />
-              <Tooltip contentStyle={{ background: C.navy, border: "none", borderRadius: 8, fontSize: 12 }} labelStyle={{ color: C.goldLight, fontFamily: "'Dashboard', 'Lora', serif" }} itemStyle={{ color: "#fff" }} formatter={tip} />
+              <Tooltip contentStyle={{ background: C.navy, border: "none", borderRadius: 8, fontSize: 12 }} labelStyle={{ color: C.goldLight, fontFamily: "'Josefin Sans', 'Lora', serif" }} itemStyle={{ color: "#fff" }} formatter={tip} />
               {active.referenceLine && <ReferenceLine y={active.referenceLine.y} stroke={C.navy} strokeDasharray="5 4" label={active.referenceLine.label ? { value: active.referenceLine.label, position: "insideTopRight", fontSize: 11, fill: C.navy, dy: -6 } : undefined} />}
               {active.legend && <Legend wrapperStyle={{ fontSize: 11.5, paddingTop: 10 }} />}
               {series.map((s, si) => {
@@ -287,7 +287,7 @@ const { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Le
               <CartesianGrid stroke={C.border} vertical={false} />
               <XAxis dataKey={spec.xKey || "lb"} tick={{ fontSize: 11, fill: C.muted }} axisLine={{ stroke: C.border }} tickLine={false} />
               <YAxis domain={spec.yDomain || [0, "auto"]} tickFormatter={(v) => fmt(v, spec.yFormat)} tick={{ fontSize: 11, fill: C.muted }} axisLine={false} tickLine={false} width={spec.yWidth || 48} />
-              <Tooltip contentStyle={{ background: C.navy, border: "none", borderRadius: 8, fontSize: 12 }} labelStyle={{ color: C.goldLight, fontFamily: "'Dashboard', 'Lora', serif" }} itemStyle={{ color: "#fff" }} formatter={(v, n, p) => [fmt(v, (spec.tooltip && spec.tooltip.valueFormat) || spec.yFormat), (spec.tooltip && spec.tooltip.extraKey && p && p.payload) ? p.payload[spec.tooltip.extraKey] : (s0.name || "")]} />
+              <Tooltip contentStyle={{ background: C.navy, border: "none", borderRadius: 8, fontSize: 12 }} labelStyle={{ color: C.goldLight, fontFamily: "'Josefin Sans', 'Lora', serif" }} itemStyle={{ color: "#fff" }} formatter={(v, n, p) => [fmt(v, (spec.tooltip && spec.tooltip.valueFormat) || spec.yFormat), (spec.tooltip && spec.tooltip.extraKey && p && p.payload) ? p.payload[spec.tooltip.extraKey] : (s0.name || "")]} />
               {spec.referenceLine && <ReferenceLine y={spec.referenceLine.y} stroke={C.navy} strokeDasharray="5 4" label={spec.referenceLine.label ? { value: spec.referenceLine.label, position: "insideTopRight", fontSize: 11, fill: C.navy, dy: -6 } : undefined} />}
               <Area type="monotone" dataKey={s0.key || "v"} stroke={c} strokeWidth={2.5} fill={"url(#" + gid + ")"} />
             </AreaChart>
@@ -388,7 +388,7 @@ const { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Le
                 <div>
                   <div style={{ width: 40, height: 4, borderRadius: 4, background: C.navyLight, marginBottom: 12 }} />
                   {meta.brand && <div style={{ fontSize: 10.5, letterSpacing: "0.11em", textTransform: "uppercase", color: C.gold, fontWeight: 700, marginBottom: 8 }}>{meta.brand}</div>}
-                  {meta.title && <h1 style={{ fontFamily: "'Dashboard', 'Lora', serif", fontSize: 32, fontWeight: 600, color: C.navy, margin: "0 0 9px", lineHeight: 1.12, letterSpacing: "-.01em" }}>{meta.title}</h1>}
+                  {meta.title && <h1 style={{ fontFamily: "'Josefin Sans', 'Lora', serif", fontSize: 32, fontWeight: 600, color: C.navy, margin: "0 0 9px", lineHeight: 1.12, letterSpacing: "-.01em" }}>{meta.title}</h1>}
                   {meta.intro && <p style={{ color: C.muted, fontSize: 13.5, maxWidth: 680, margin: 0, lineHeight: 1.6 }}>{meta.intro}</p>}
                 </div>
                 {meta.period && <span style={{ flex: "none", background: C.navyLight, color: "#fff", fontSize: 12, fontWeight: 600, padding: "9px 15px", borderRadius: 999, boxShadow: SHADOW }}>{meta.period}</span>}

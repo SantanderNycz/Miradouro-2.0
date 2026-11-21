@@ -3,9 +3,6 @@
 // engine.tsx da app) e transpila-o no browser do visitante via Babel standalone, pelo
 // que o HTML exportado é visualmente idêntico à pré-visualização da app.
 import ENGINE_SRC from "@/report/engine.standalone.txt";
-// Fonte dos títulos (Dashboard) como data URL (base64), para o HTML exportado a ter
-// embutida — fica idêntico mesmo offline/externo (gerado de Dashboard-Regular.otf).
-import { DASHBOARD_FONT_DATA_URL } from "@/fonts/dashboardFontBase64";
 import type { Report } from "@/types/report";
 
 export function buildStandaloneHtml(report: Report): string {
@@ -37,9 +34,8 @@ export function buildStandaloneHtml(report: Report): string {
     '  <meta name="viewport" content="width=device-width, initial-scale=1.0" />',
     "  <title>" + escapeHtml(title) + "</title>",
     '  <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />',
-    '  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet" />',
+    '  <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet" />',
     "  <style>",
-    "    @font-face { font-family: 'Dashboard'; src: url('" + DASHBOARD_FONT_DATA_URL + "') format('opentype'); font-weight: 400; font-display: swap; }",
     "    * { box-sizing: border-box; } html, body { margin: 0; padding: 0; }",
     "    body { font-family: Poppins, system-ui, sans-serif; background: #241A38; -webkit-font-smoothing: antialiased; }",
     "    #root { min-height: 100vh; }",
