@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
 import logo from "@/assets/logo-transp.png";
 import { usePrefs } from "@/lib/prefs";
@@ -11,6 +12,7 @@ type Row = { id: string; title: string; updated_at: string; is_public: boolean }
 
 export default function DashboardClient({ rows, email }: { rows: Row[]; email: string }) {
   const { t, lang } = usePrefs();
+  const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const linkBtn: React.CSSProperties = {
     textDecoration: "none", fontSize: 12.5, fontWeight: 600, padding: "8px 13px",
@@ -58,13 +60,21 @@ export default function DashboardClient({ rows, email }: { rows: Row[]; email: s
                   {t("updated")} {new Date(r.updated_at).toLocaleString(intlLocale[lang])} {r.is_public ? `· ${t("public_tag")}` : ""}
                 </div>
               </div>
-              <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-                {r.is_public && <Link href={`/r/${r.id}`} style={linkBtn}>{t("view")}</Link>}
-                <Link href={`/report/${r.id}`} style={{ ...linkBtn, background: "var(--ui-accent)", color: "#fff", border: "none" }}>{t("edit")}</Link>
-                <form action={deleteReport.bind(null, r.id)}>
-                  <button style={{ ...linkBtn, border: "1px solid var(--ui-danger)", color: "var(--ui-danger)", background: "transparent", cursor: "pointer" }}>{t("del")}</button>
-                </form>
-              </div>
+              {confirmId === r.id ? (
+                <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 12.5, color: "var(--ui-danger)", fontWeight: 600 }}>{t("del_q")}</span>
+                  <form action={deleteReport.bind(null, r.id)}>
+                    <button style={{ ...linkBtn, border: "none", background: "var(--ui-danger)", color: "#fff", cursor: "pointer" }}>{t("del_confirm")} «{r.title}»</button>
+                  </form>
+                  <button onClick={() => setConfirmId(null)} style={{ ...linkBtn, background: "transparent", cursor: "pointer" }}>{t("cancel")}</button>
+                </div>
+              ) : (
+                <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+                  {r.is_public && <Link href={`/r/${r.id}`} style={linkBtn}>{t("view")}</Link>}
+                  <Link href={`/report/${r.id}`} style={{ ...linkBtn, background: "var(--ui-accent)", color: "#fff", border: "none" }}>{t("edit")}</Link>
+                  <button onClick={() => setConfirmId(r.id)} style={{ ...linkBtn, border: "1px solid var(--ui-danger)", color: "var(--ui-danger)", background: "transparent", cursor: "pointer" }}>{t("del")}</button>
+                </div>
+              )}
             </div>
           ))}
         </div>

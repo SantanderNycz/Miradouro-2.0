@@ -360,6 +360,7 @@ export default function EditorClient({ row }: { row: ReportRow }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "var(--ui-bg)" }}>
+      <style>{"@media (max-width: 820px){ .mir-editor-split{ flex-direction: column !important; } .mir-editor-panel{ width: 100% !important; min-width: 0 !important; max-width: none !important; flex: none !important; height: 48vh; border-right: none !important; border-bottom: 1px solid var(--ui-border) !important; } }"}</style>
       <header style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 18px", background: "var(--ui-header-bg)", color: "#fff", flexWrap: "wrap" }}>
         <Link href="/dashboard" style={{ color: "var(--ui-accent-soft)", textDecoration: "none", fontSize: 12.5, fontWeight: 600 }}>← {t("back_reports")}</Link>
         <button onClick={() => setCollapsed((c) => !c)} title={collapsed ? t("expand") : t("collapse")} style={headerBtn}>
@@ -379,9 +380,9 @@ export default function EditorClient({ row }: { row: ReportRow }) {
         </div>
       </header>
 
-      <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
+      <div className="mir-editor-split" style={{ display: "flex", flex: 1, minHeight: 0 }}>
         {!collapsed && (
-          <div style={{ width: "44%", minWidth: 380, maxWidth: 640, display: "flex", flexDirection: "column", borderRight: "1px solid var(--ui-border)", background: "var(--ui-panel)" }}>
+          <div className="mir-editor-panel" style={{ width: "44%", minWidth: 380, maxWidth: 640, display: "flex", flexDirection: "column", borderRight: "1px solid var(--ui-border)", background: "var(--ui-panel)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderBottom: "1px solid var(--ui-border)", flexWrap: "wrap" }}>
               <div style={{ display: "inline-flex", background: "var(--ui-border)", borderRadius: 999, padding: 3 }}>
                 {(["form", "json"] as Mode[]).map((m) => (

@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import logo from "@/assets/logo-transp.png";
 import { signIn, signUp } from "./actions";
 import { usePrefs } from "@/lib/prefs";
 import PrefsBar from "@/components/PrefsBar";
@@ -30,9 +31,13 @@ export default function LoginPage() {
       <div style={{ position: "absolute", top: 18, right: 18 }}>
         <PrefsBar variant="dark" />
       </div>
-      <div style={{ width: "100%", maxWidth: 380, background: "var(--ui-surface)", borderRadius: 20, padding: "30px 28px", boxShadow: "0 30px 70px -30px rgba(0,0,0,.5)" }}>
-        <div style={{ fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--ui-accent)", fontWeight: 600 }}>Miradouro</div>
-        <h1 style={{ fontFamily: "var(--font-display), Lora, serif", fontSize: 26, margin: "6px 0 18px", color: "var(--ui-text)" }}>
+      <div style={{ width: "100%", maxWidth: 380, display: "flex", flexDirection: "column", alignItems: "center" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={logo.src} alt="Miradouro" style={{ height: 56, width: "auto", display: "block", marginBottom: 16 }} />
+        <div style={{ fontFamily: "var(--font-display), Lora, serif", fontSize: 32, color: "#fff", letterSpacing: ".04em", textAlign: "center", marginBottom: 26 }}>Miradouro</div>
+
+        <div style={{ width: "100%", background: "var(--ui-surface)", borderRadius: 20, padding: "30px 28px", boxShadow: "0 30px 70px -30px rgba(0,0,0,.5)" }}>
+        <h1 style={{ fontFamily: "var(--font-display), Lora, serif", fontSize: 26, margin: "0 0 18px", color: "var(--ui-text)" }}>
           {mode === "in" ? t("login_in") : t("login_up")}
         </h1>
         {!configured && (
@@ -41,8 +46,14 @@ export default function LoginPage() {
           </div>
         )}
         <form onSubmit={onSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <input name="email" type="email" required placeholder={t("email")} style={inp} />
-          <input name="password" type="password" required minLength={6} placeholder={t("password")} style={inp} />
+          <div>
+            <label htmlFor="email" style={lbl}>{t("email")}</label>
+            <input id="email" name="email" type="email" required autoComplete="email" style={inp} />
+          </div>
+          <div>
+            <label htmlFor="password" style={lbl}>{t("password")}</label>
+            <input id="password" name="password" type="password" required minLength={6} autoComplete="current-password" style={inp} />
+          </div>
           <button type="submit" disabled={loading || !configured}
             style={{ marginTop: 4, border: "none", cursor: configured ? "pointer" : "not-allowed", background: configured ? "var(--ui-accent)" : "var(--ui-accent-soft)", color: "#fff", fontWeight: 600, fontSize: 14, padding: "12px", borderRadius: 10 }}>
             {loading ? t("processing") : mode === "in" ? t("btn_enter") : t("btn_register")}
@@ -57,12 +68,16 @@ export default function LoginPage() {
             {mode === "in" ? t("login_up") : t("login_in")}
           </button>
         </div>
+        </div>
       </div>
     </div>
   );
 }
 
 const inp: React.CSSProperties = {
-  border: "1px solid var(--ui-border)", borderRadius: 10, padding: "11px 13px",
+  width: "100%", border: "1px solid var(--ui-border)", borderRadius: 10, padding: "11px 13px",
   fontSize: 14, fontFamily: "Poppins, sans-serif", background: "var(--ui-input-bg)", color: "var(--ui-text)",
+};
+const lbl: React.CSSProperties = {
+  display: "block", fontSize: 12, fontWeight: 600, color: "var(--ui-muted)", marginBottom: 5,
 };

@@ -51,6 +51,9 @@ const T: Record<string, Row> = {
   view: { "pt-PT": "Ver", "pt-BR": "Ver", en: "View", fr: "Voir", es: "Ver" },
   edit: { "pt-PT": "Editar", "pt-BR": "Editar", en: "Edit", fr: "Modifier", es: "Editar" },
   del: { "pt-PT": "Apagar", "pt-BR": "Excluir", en: "Delete", fr: "Supprimer", es: "Eliminar" },
+  cancel: { "pt-PT": "Cancelar", "pt-BR": "Cancelar", en: "Cancel", fr: "Annuler", es: "Cancelar" },
+  del_confirm: { "pt-PT": "Apagar", "pt-BR": "Excluir", en: "Delete", fr: "Supprimer", es: "Eliminar" },
+  del_q: { "pt-PT": "Apagar este relatório? Não dá para recuperar.", "pt-BR": "Excluir este relatório? Não dá para recuperar.", en: "Delete this report? This can't be undone.", fr: "Supprimer ce rapport ? Action irréversible.", es: "¿Eliminar este informe? No se puede deshacer." },
   // editor chrome
   back_reports: { "pt-PT": "Relatórios", "pt-BR": "Relatórios", en: "Reports", fr: "Rapports", es: "Informes" },
   collapse: { "pt-PT": "Recolher", "pt-BR": "Recolher", en: "Collapse", fr: "Réduire", es: "Contraer" },

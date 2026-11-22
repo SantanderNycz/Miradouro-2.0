@@ -42,6 +42,7 @@ export function buildStandaloneHtml(report: Report): string {
     "    #boot { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; background: #241A38; color: #B9A7EE; font-size: 13.5px; transition: opacity .3s ease; }",
     "    #boot .spin { width: 26px; height: 26px; border-radius: 50%; border: 2.5px solid rgba(255,255,255,.15); border-top-color: #B9A7EE; animation: spin .8s linear infinite; }",
     "    @keyframes spin { to { transform: rotate(360deg); } }",
+    "    @media (prefers-reduced-motion: reduce) { #boot .spin { animation: none; } #boot { transition: none; } }",
     "  </style>", "</head>", "<body>",
     '  <div id="boot"><div class="spin"></div><div>A carregar o relatório…</div></div>',
     '  <div id="root"></div>',

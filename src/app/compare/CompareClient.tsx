@@ -37,12 +37,13 @@ export default function CompareClient({ reports }: { reports: Item[] }) {
 
   const selStyle: React.CSSProperties = {
     border: "1px solid var(--ui-border)", borderRadius: 8, padding: "8px 10px", fontSize: 13,
-    fontFamily: "Poppins, sans-serif", background: "var(--ui-input-bg)", color: "var(--ui-text)", minWidth: 200,
+    fontFamily: "Poppins, sans-serif", background: "var(--ui-input-bg)", color: "var(--ui-text)",
+    flex: "1 1 150px", minWidth: 0,
   };
 
   function Pane({ data, loading }: { data: Report | null; loading: boolean }) {
     return (
-      <div style={{ flex: layout === "side" ? "1 1 0" : "1 1 100%", minWidth: 0, minHeight: layout === "side" ? 0 : 480, overflow: "auto", background: "var(--ui-surface)", borderRadius: 12, border: "1px solid var(--ui-border)" }}>
+      <div className="mir-compare-pane" style={{ flex: layout === "side" ? "1 1 0" : "1 1 100%", minWidth: 0, minHeight: layout === "side" ? 0 : 480, overflow: "auto", background: "var(--ui-surface)", borderRadius: 12, border: "1px solid var(--ui-border)" }}>
         {loading ? (
           <div style={{ padding: 40, textAlign: "center", color: "var(--ui-muted)", fontSize: 13 }}>{t("loading")}</div>
         ) : data ? (
@@ -56,6 +57,7 @@ export default function CompareClient({ reports }: { reports: Item[] }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "var(--ui-bg)" }}>
+      <style>{"@media (max-width: 760px){ .mir-compare-panes{ flex-direction: column !important; overflow: auto !important; } .mir-compare-pane{ flex: none !important; min-height: 70vh !important; } }"}</style>
       <header style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 18px", background: "var(--ui-header-bg)", color: "#fff", flexWrap: "wrap" }}>
         <Link href="/dashboard" style={{ color: "var(--ui-accent-soft)", textDecoration: "none", fontSize: 12.5, fontWeight: 600 }}>← {t("back_reports")}</Link>
         <span style={{ fontFamily: "var(--font-display), Lora, serif", fontSize: 15 }}>{t("compare_title")}</span>
@@ -84,7 +86,7 @@ export default function CompareClient({ reports }: { reports: Item[] }) {
         {!dataA && !dataB && <span style={{ color: "var(--ui-muted)", fontSize: 12.5 }}>{t("compare_hint")}</span>}
       </div>
 
-      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: layout === "side" ? "row" : "column", gap: 12, padding: 12, overflow: layout === "side" ? "hidden" : "auto" }}>
+      <div className="mir-compare-panes" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: layout === "side" ? "row" : "column", gap: 12, padding: 12, overflow: layout === "side" ? "hidden" : "auto" }}>
         <Pane data={dataA} loading={loadingA} />
         <Pane data={dataB} loading={loadingB} />
       </div>
