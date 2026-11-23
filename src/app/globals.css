@@ -65,6 +65,16 @@ body {
   border-radius: 6px;
 }
 
+/* Skeleton de carregamento (shimmer suave). */
+.mir-skel {
+  background: linear-gradient(90deg, var(--ui-border) 25%, var(--ui-panel) 37%, var(--ui-border) 63%);
+  background-size: 400% 100%;
+  animation: mir-shimmer 1.4s ease infinite;
+  border-radius: 8px;
+}
+@keyframes mir-shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .mir-skel { animation: none; background: var(--ui-border); } }
+
 /* Respeitar prefers-reduced-motion: desligar transições/animações. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
