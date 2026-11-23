@@ -1,11 +1,6 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { supabaseConfigured } from "@/lib/supabase/env";
+import Landing from "./Landing";
 
-export default async function Home() {
-  // Sem Supabase configurado, encaminha para o login (que mostra o aviso de setup).
-  if (!supabaseConfigured()) redirect("/login");
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-  redirect(data.user ? "/dashboard" : "/login");
+// Landing pública. Um utilizador autenticado é reencaminhado para /dashboard no middleware.
+export default function Home() {
+  return <Landing />;
 }

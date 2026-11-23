@@ -27,11 +27,24 @@ export async function middleware(request: NextRequest) {
       },
     }
   );
+  let user = null;
   try {
-    await supabase.auth.getUser();
+    const res = await supabase.auth.getUser();
+    user = res.data.user;
   } catch {
     // Supabase indisponível / credenciais em falta — não bloquear o pedido.
   }
+
+  // "/" e "/login" são públicos; um utilizador autenticado é levado ao /dashboard.
+  const path = request.nextUrl.pathname;
+  if (user && (path === "/" || path === "/login")) {
+    const dash = request.nextUrl.clone();
+    dash.pathname = "/dashboard";
+    const redirect = NextResponse.redirect(dash);
+    response.cookies.getAll().forEach((c) => redirect.cookies.set(c));
+    return redirect;
+  }
+
   return response;
 }
 
