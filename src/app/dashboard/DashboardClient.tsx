@@ -46,8 +46,12 @@ export default function DashboardClient({ rows, email }: { rows: Row[]; email: s
         </div>
 
         {rows.length === 0 && (
-          <div style={{ background: "var(--ui-surface)", border: "1px solid var(--ui-border)", borderRadius: 16, padding: 40, textAlign: "center", color: "var(--ui-muted)" }}>
-            {t("empty_reports")}
+          <div style={{ background: "var(--ui-surface)", border: "1px solid var(--ui-border)", borderRadius: 16, padding: "48px 32px", textAlign: "center" }}>
+            <div style={{ fontFamily: "var(--font-display), Lora, serif", fontSize: 22, color: "var(--ui-text)", marginBottom: 8 }}>{t("empty_reports")}</div>
+            <div style={{ fontSize: 13.5, color: "var(--ui-muted)", maxWidth: 420, margin: "0 auto 20px", lineHeight: 1.55 }}>{t("empty_reports_sub")}</div>
+            <form action={createReport}>
+              <button style={{ border: "none", background: "var(--ui-accent)", color: "#fff", fontWeight: 600, fontSize: 14, padding: "12px 20px", borderRadius: 999, cursor: "pointer" }}>{t("empty_cta")}</button>
+            </form>
           </div>
         )}
 
