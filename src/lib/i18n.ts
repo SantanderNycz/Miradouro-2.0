@@ -1,5 +1,5 @@
 // i18n da interface da app (o conteúdo dos relatórios não é traduzido — é dado do utilizador).
-export type Locale = "pt-PT" | "pt-BR" | "en" | "fr" | "es";
+export type Locale = "pt-PT" | "pt-BR" | "en" | "fr" | "es" | "zh";
 
 export const LOCALES: { code: Locale; label: string }[] = [
   { code: "pt-PT", label: "PT-PT" },
@@ -7,10 +7,12 @@ export const LOCALES: { code: Locale; label: string }[] = [
   { code: "en", label: "EN" },
   { code: "fr", label: "FR" },
   { code: "es", label: "ES" },
+  { code: "zh", label: "中文" },
 ];
 export const DEFAULT_LOCALE: Locale = "pt-PT";
 
-type Row = Record<Locale, string>;
+// Idiomas de origem (o Mandarim vive no dicionário ZH, abaixo).
+type Row = { "pt-PT": string; "pt-BR": string; en: string; fr: string; es: string };
 const T: Record<string, Row> = {
   brand_sub: { "pt-PT": "Estúdio de relatórios", "pt-BR": "Estúdio de relatórios", en: "Report studio", fr: "Studio de rapports", es: "Estudio de informes" },
   // login
@@ -195,6 +197,7 @@ const T: Record<string, Row> = {
 
 export function translator(loc: Locale) {
   return (key: string): string => {
+    if (loc === "zh") return ZH[key] ?? T[key]?.en ?? T[key]?.[DEFAULT_LOCALE] ?? key;
     const row = T[key];
     if (!row) return key;
     return row[loc] ?? row[DEFAULT_LOCALE] ?? key;
@@ -203,5 +206,64 @@ export function translator(loc: Locale) {
 
 // localidade para formatação de datas (Intl)
 export const intlLocale: Record<Locale, string> = {
-  "pt-PT": "pt-PT", "pt-BR": "pt-BR", en: "en-US", fr: "fr-FR", es: "es-ES",
+  "pt-PT": "pt-PT", "pt-BR": "pt-BR", en: "en-US", fr: "fr-FR", es: "es-ES", zh: "zh-CN",
+};
+
+// Mandarim (Simplificado) — cobre todas as chaves de T.
+const ZH: Record<string, string> = {
+  brand_sub: "活动报告工作室",
+  login_in: "登录", login_up: "创建账户", email: "邮箱", password: "密码",
+  btn_enter: "登录", btn_register: "注册", processing: "处理中…",
+  no_account: "还没有账户？ ", have_account: "已有账户？ ",
+  signup_done: "账户已创建。如果开启了邮箱确认，请确认后再登录。",
+  not_configured: "Supabase 尚未配置。请在 .env.local 中设置 NEXT_PUBLIC_SUPABASE_URL 和 NEXT_PUBLIC_SUPABASE_ANON_KEY，运行迁移并重启服务器。",
+  my_reports: "我的报告", reports: "报告", new_report: "+ 新建报告", logout: "退出",
+  empty_reports: "还没有报告。",
+  empty_reports_sub: "从示例报告开始创建第一份——已包含 KPI、图表和总结。",
+  empty_cta: "创建第一份报告",
+  nf_title: "页面未找到", nf_text: "你要找的报告或页面不存在，或已不再公开。", nf_home: "返回首页",
+  err_title: "出了点问题", err_text: "加载此页面时发生了意外错误。", err_retry: "重试",
+  updated: "更新于", public_tag: "公开", view: "查看", edit: "编辑", del: "删除",
+  cancel: "取消", del_confirm: "删除", del_q: "删除此报告？此操作无法撤销。",
+  back_reports: "报告", collapse: "收起", expand: "编辑",
+  saving: "保存中…", saved: "已保存 ✓", save_error: "保存失败",
+  public_toggle: "公开", open_public: "打开公开链接 ↗",
+  mode_form: "表单", mode_json: "JSON", claude_btn: "Claude 指令", copied: "已复制 ✓",
+  json_valid: "✓ JSON 有效——已自动保存", json_invalid: "⚠ JSON 无效：",
+  add_remove_hint: "要新增/删除标签页或区块，请使用 JSON 模式（或用上方按钮让 Claude 生成）。",
+  sec_header: "页眉", f_theme: "主题", f_period: "周期", f_brand: "品牌 / 客户（小标题）",
+  f_title: "标题", f_intro: "引言", f_footer: "页脚（侧栏）", f_notes: "阅读说明",
+  tab_name: "标签页名称", tab_word: "标签页", blocks_word: "区块",
+  no_blocks: "此标签页没有区块。", theme_default: "—（默认）",
+  b_eyebrow: "小标题", b_value: "数值", b_sub: "副文本", b_accent: "强调色",
+  b_hero: "突出（深色）", b_footnote: "脚注", b_title: "标题", b_card_title: "卡片标题",
+  b_subtitle: "副标题", b_text: "文本（**加粗**）", b_paragraph: "段落（**加粗**）",
+  b_lead: "引导语（加粗）", b_tone: "色调", b_label: "标签", b_valuelabel: "数值（文本）",
+  b_pct: "百分比", b_color: "颜色",
+  add_kpi: "+ 添加 KPI", add_point: "+ 添加要点", add_step: "+ 添加步骤",
+  add_bar: "+ 添加条形", add_row: "+ 添加行",
+  cols_hint: "列和格式在 JSON 模式中编辑。",
+  json_only: "在 JSON 模式中编辑（图表和高级设置）。",
+  nested_empty: "没有区块。请在 JSON 模式中添加。",
+  bt_kpis: "KPI", bt_card: "卡片", bt_row: "行（并排）", bt_table: "表格",
+  bt_note: "注释", bt_banner: "横幅", bt_synthesis: "总结", bt_callout: "标注",
+  bt_funnel: "漏斗", bt_progress: "进度", bt_heading: "标题", bt_text: "文本", bt_spacer: "间距",
+  download_html: "下载 HTML", compare: "对比", compare_title: "对比报告",
+  compare_pick: "选择一份报告…", compare_hint: "选择两份报告以并排查看。",
+  compare_layout_side: "并排", compare_layout_stack: "堆叠", loading: "加载中…",
+  nav_signin: "登录", hero_eyebrow: "活动报告工作室",
+  hero_title: "讲述完整故事的活动报告。",
+  hero_sub: "从简单的结构构建交互式报告——KPI、图表、表格和总结。实时预览、自动保存，并通过公开链接分享。",
+  hero_cta: "创建报告", hero_cta_sub: "登录或注册——免费。",
+  features_title: "一份活动报告所需的一切",
+  feat_editor_t: "区块编辑器", feat_editor_d: "用表单或 JSON 构建：KPI、条形图和面积图、表格、漏斗、注释和总结。",
+  feat_preview_t: "实时预览", feat_preview_d: "边输入边看报告成形，呈现最终的主题与字体。",
+  feat_autosave_t: "自动保存", feat_autosave_d: "每次改动都会自动保存，绝不丢失工作。",
+  feat_share_t: "公开分享", feat_share_d: "一键发布，发送任何人无需账户即可打开的链接。",
+  feat_i18n_t: "多语言", feat_i18n_d: "六种语言的界面，选择会保存在设备上。",
+  feat_theme_t: "浅色与深色", feat_theme_d: "全应用一致的主题，并遵循系统偏好。",
+  preview_eyebrow: "一份已渲染的报告",
+  preview_caption: "你在此看到的同一引擎会生成你的报告和可下载的 HTML。",
+  footer_tagline: "活动报告工作室。",
+  pref_theme_light: "浅色", pref_theme_dark: "深色", pref_language: "语言",
 };
