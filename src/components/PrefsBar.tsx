@@ -18,6 +18,14 @@ export default function PrefsBar({ variant = "dark" }: { variant?: "dark" | "lig
     ...btn, paddingRight: 6, appearance: "none",
     background: onDark ? "transparent" : "var(--ui-input-bg)",
   };
+  // O popup nativo do <select> segue o tema do SO/página: no escuro, texto claro
+  // sobre fundo escuro; no claro, texto escuro sobre fundo claro. Caso contrário
+  // o texto fica ilegível quando o popup fica escuro.
+  const isDark = theme === "dark";
+  const optStyle: React.CSSProperties = {
+    color: isDark ? "#F3EEFF" : "#241A38",
+    background: isDark ? "#241A38" : "#FFFFFF",
+  };
 
   return (
     <div style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
@@ -26,7 +34,7 @@ export default function PrefsBar({ variant = "dark" }: { variant?: "dark" | "lig
       </button>
       <select value={lang} onChange={(e) => setLang(e.target.value as any)} style={sel} title={t("pref_language")} aria-label={t("pref_language")}>
         {LOCALES.map((l) => (
-          <option key={l.code} value={l.code} style={{ color: "#241A38" }}>{l.label}</option>
+          <option key={l.code} value={l.code} style={optStyle}>{l.label}</option>
         ))}
       </select>
     </div>
