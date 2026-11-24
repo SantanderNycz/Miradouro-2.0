@@ -12,9 +12,30 @@ const josefin = localFont({
   display: "swap",
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://miradouro.vercel.app";
+const DESCRIPTION =
+  "Estúdio para criar relatórios de campanha interativos — KPIs, gráficos, tabelas e síntese — com pré-visualização ao vivo, gravação automática e partilha por link público.";
+
 export const metadata: Metadata = {
-  title: "Miradouro",
-  description: "Estúdio de relatórios — a vista completa da campanha.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Miradouro — estúdio de relatórios de campanha",
+    template: "%s · Miradouro",
+  },
+  description: DESCRIPTION,
+  applicationName: "Miradouro",
+  openGraph: {
+    type: "website",
+    siteName: "Miradouro",
+    title: "Miradouro — estúdio de relatórios de campanha",
+    description: DESCRIPTION,
+    url: SITE_URL,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Miradouro — estúdio de relatórios de campanha",
+    description: DESCRIPTION,
+  },
 };
 
 // Aplica o tema/idioma guardados antes da pintura, para não haver flash de tema claro.
